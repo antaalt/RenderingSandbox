@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{1739e6be-ee71-474e-a219-019a04f336fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RenderingSession">
+      <UniqueIdentifier>{ecdde1b0-58bb-41e2-97c5-f8ddb4f763f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Renderer">
+      <UniqueIdentifier>{c3514927-4c3f-499f-9aa4-14256b13c856}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\RenderingSession">
+      <UniqueIdentifier>{5d9bffb4-8d45-4676-a5d1-cddee06adc21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{dede0334-4f2f-4be4-b0ac-661ce4bd2ecc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SceneLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>Source Files\RenderingSession</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files\RenderingSession</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RendererContext.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderPass.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\RenderingSession</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererContext.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderPass.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files\RenderingSession</Filter>
+    </ClInclude>
+    <ClInclude Include="math\color32.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\colorHDR.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\mat3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\mat4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\norm3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\point3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\print.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\quat.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\scientific.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\uv2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vec2.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vec3.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="math\color32.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\colorHDR.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\mat3.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\mat4.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\norm3.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\point3.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\quat.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\uv2.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\vec2.inl">
+      <Filter>Math</Filter>
+    </None>
+    <None Include="math\vec3.inl">
+      <Filter>Math</Filter>
+    </None>
+  </ItemGroup>
+</Project>
