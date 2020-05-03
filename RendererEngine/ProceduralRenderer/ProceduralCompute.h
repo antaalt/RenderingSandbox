@@ -22,7 +22,9 @@ public:
 private:
 	struct alignas(16) PushConstant
 	{
-		float what;
+		uint32_t width;
+		uint32_t height;
+		float time;
 	} m_pushc;
 
 	VkPipeline m_pipeline;

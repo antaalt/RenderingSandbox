@@ -1,18 +1,79 @@
 #version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "noise.h"
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
 layout(set = 0, binding = 0, rgba8) uniform writeonly image2D outputImage;
 
 layout(push_constant) uniform Params {
-	float what;
+	uint width;
+	uint height;
+	float timeElapsed;
 } params;
+
+struct Ray {
+	vec3 origin;
+	vec3 direction;
+};
+
+const float pi = 3.14159;
+
+Ray generateRayForPixel(uint x, uint y)
+{
+	vec2 uv = vec2(
+		x / float(params.width),
+		y / float(params.height)
+	);
+	float ratio = 16.0 / 9.0;
+	float fov = 90.0;
+	float filmWidth = 1 / tan(fov * pi / 180.0);
+	Ray ray;
+	ray.origin = vec3(0,0,0);
+	ray.direction = normalize(vec3(
+		(uv.x * 2.0 - 1.0) * filmWidth,
+		(uv.y * 2.0 - 1.0) * filmWidth * ratio,
+		1
+	));
+	return ray;
+}
+
+vec4 castRay(in Ray ray, out float dist)
+{
+	vec2 uv = gl_GlobalInvocationID.xy/vec2(params.width, params.height);
+	float noise = cnoise(vec3(uv.x * 10.f, uv.y * 10.f, params.timeElapsed)) + 1.0 * 0.5;
+	return vec4(vec3(noise), 1);
+	/*if(true)
+	{
+		return terrainColor(ray, t);
+	}
+	else
+	{
+		return skyColor();
+	}*/
+}
+
+vec4 terrainColor(in Ray, in float t)
+{
+	return vec4(0, 1, 0, 1);
+}
+
+vec4 skyColor()
+{
+	return vec4(0, 0, 1, 1);
+}
+
 
 void main()
 {
+	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+
+	float t;
+	vec4 outColor = castRay(ray, t);
 	imageStore(
 		outputImage,
 		ivec2(gl_GlobalInvocationID.xy),
-		 vec4(0,1,0,1)
+		vec4(ray.direction, 1)//outColor
 	);
 }

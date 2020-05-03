@@ -1,6 +1,7 @@
 #include "ProceduralCompute.h"
 
 #include <fstream>
+#include <chrono>
 
 namespace app {
 
@@ -123,7 +124,13 @@ void ProceduralCompute::destroy(const vk::Device &device)
 
 void ProceduralCompute::execute(const vk::CommandBuffer &cmdBuff, const vk::Context &context)
 {
-	m_pushc.what = 4.f;
+	{
+		using namespace std::chrono;
+		static time_point<steady_clock> time = steady_clock::now();
+		m_pushc.width = context.getWidth();
+		m_pushc.height = context.getHeight();
+		m_pushc.time = duration_cast<milliseconds>(steady_clock::now() - time).count() / 1000.f;
+	}
 	vkCmdPushConstants(cmdBuff(), m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant), &m_pushc);
 	vkCmdBindPipeline(cmdBuff(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 	vkCmdBindDescriptorSets(cmdBuff(), VK_PIPELINE_BIND_POINT_COMPUTE, m_layout, 0, 1, &m_descriptorSet, 0, 0);
