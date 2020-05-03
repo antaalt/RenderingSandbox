@@ -22,6 +22,7 @@
     <ClInclude Include="Array.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Image.h" />
+    <ClInclude Include="json.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Reader.h" />
   </ItemGroup>
@@ -29,6 +30,7 @@
     <ClCompile Include="Array.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Image.cpp" />
+    <ClCompile Include="json.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Reader.cpp" />
   </ItemGroup>

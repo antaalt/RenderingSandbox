@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-namespace ge {
+namespace engine {
 
 
 Renderer::Renderer()

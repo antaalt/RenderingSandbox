@@ -1,4 +1,4 @@
-#include "point3.h"
+#include "quat.h"
 
 namespace geometry {
 	inline quat::quat()

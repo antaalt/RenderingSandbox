@@ -22,13 +22,17 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RendererContext.cpp" />
+    <ClCompile Include="RendererMesh.cpp" />
+    <ClCompile Include="RendererProgram.cpp" />
+    <ClCompile Include="RenderingSession.cpp" />
     <ClCompile Include="RenderPass.cpp" />
-    <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="SceneLoader.cpp" />
+    <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ModelLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="framegraph.hpp" />
     <ClInclude Include="math\color32.h" />
     <ClInclude Include="math\colorHDR.h" />
     <ClInclude Include="math\mat3.h" />
@@ -43,9 +47,12 @@
     <ClInclude Include="math\vec3.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RendererContext.h" />
+    <ClInclude Include="RendererMesh.h" />
+    <ClInclude Include="RendererProgram.h" />
+    <ClInclude Include="RenderingSession.h" />
     <ClInclude Include="RenderPass.h" />
-    <ClInclude Include="Scene.h" />
-    <ClInclude Include="SceneLoader.h" />
+    <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="math\color32.inl" />
@@ -118,10 +125,17 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalDependencies>Framework.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)libs\glew-2.1.0\lib\Release\Win32;$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -11,8 +11,8 @@ template <typename T>
 class TBuffer
 {
 public:
-	TBuffer();
-	~TBuffer();
+	TBuffer() {}
+	~TBuffer() {}
 };
 
 }

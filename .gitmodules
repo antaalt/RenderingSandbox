@@ -1,0 +1,6 @@
+[submodule "RendererEngine/glfw"]
+	path = RendererEngine/libs/glfw
+	url = git@github.com:glfw/glfw.git
+[submodule "RendererEngine/glew"]
+	path = RendererEngine/libs/glew
+	url = git@github.com:nigels-com/glew.git

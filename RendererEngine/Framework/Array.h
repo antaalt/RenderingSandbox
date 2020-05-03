@@ -13,14 +13,14 @@ private:
 
 };
 
-template <typename T>
-class FixedArray
+template<typename T, size_t size>
+inline Array<T, size>::Array()
 {
-public:
-	Array(size_t size);
-	~Array();
-private:
+}
 
-};
+template<typename T, size_t size>
+inline Array<T, size>::~Array()
+{
+}
 
 }
