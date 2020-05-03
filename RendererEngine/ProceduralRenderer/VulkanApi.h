@@ -2,6 +2,7 @@
 
 #include <vulkan\vulkan.h>
 #include <vector>
+#include <array>
 
 #include "Window.h"
 
@@ -107,6 +108,8 @@ struct Queue {
 	bool operator==(const Queue &queue) const { return queue.handle == handle; }
 	bool operator!=(const Queue &queue) const { return queue.handle != handle; }
 
+	VkQueue operator()() const { return queue; }
+
 	Handle handle;
 	VkQueue queue;
 };
@@ -135,7 +138,7 @@ struct Device {
 	const Queue &getComputeQueue() const { return m_computeQueue; }
 	const Queue &getPresentQueue() const { return m_presentQueue; }
 
-	VkCommandPool getCommandPool() { return m_commandPool; }
+	VkCommandPool getCommandPool() const { return m_commandPool; }
 
 	VkDevice operator()() const { return m_device; }
 private:
@@ -146,26 +149,68 @@ private:
 	Queue m_presentQueue;
 };
 
+struct SwapChainFrame {
+	uint32_t imageIndex;
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
+	VkFence inFlightFence;
+
+	void wait(VkDevice device);
+};
+
 struct SwapChain {
 	void create(const vk::PhysicalDevice &physicalDevice, const vk::Device &device, const vk::Surface &surface);
 	void destroy(const vk::Device &device);
 
 	VkSwapchainKHR operator()() const { return m_swapChain; }
+
+	VkImageView getImageView(uint32_t imageIndex) const { return m_views[imageIndex]; }
+	uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
+
+	bool acquireNextFrame(const vk::Device &device, SwapChainFrame *frame);
+	bool presentFrame(const vk::Device &device, const SwapChainFrame &frame);
 private:
 	VkSwapchainKHR m_swapChain;
+	uint32_t m_currentFrameIndex;
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_views;
+	static const uint32_t maxFramesInFlight = 2;
+	std::array<SwapChainFrame, maxFramesInFlight> m_frames;
 };
 
 struct Context {
 	Context(const app::Window &window);
 	~Context();
+
+	uint32_t getWidth() const;
+	uint32_t getHeight() const;
+
+	const Device &getDevice() const { return m_device; }
+	VkImageView getImageView(uint32_t imageIndex) const { return m_swapChain.getImageView(imageIndex); }
+	uint32_t getImageCount() const { return m_swapChain.getImageCount(); }
+
+	bool acquireNextFrame(vk::SwapChainFrame *frame);
+	bool presentFrame(const vk::SwapChainFrame &frame);
+
 private:
-	vk::Instance instance;
-	vk::Surface surface;
-	vk::PhysicalDevice physicalDevice;
-	vk::Device device;
-	vk::SwapChain swapChain;
+	vk::Instance m_instance;
+	vk::Surface m_surface;
+	vk::PhysicalDevice m_physicalDevice;
+	vk::Device m_device;
+	vk::SwapChain m_swapChain;
+};
+
+struct CommandBuffer {
+	VkCommandBuffer operator()() const { return m_commandBuffer; }
+
+	void begin();
+	void end();
+
+	void set(VkCommandBuffer cmdBuff, uint32_t imageIndex) { m_imageIndex = imageIndex; m_commandBuffer = cmdBuff; }
+
+private:
+	uint32_t m_imageIndex;
+	VkCommandBuffer m_commandBuffer;
 };
 
 }

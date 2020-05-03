@@ -2,6 +2,7 @@
 
 #include "Window.h"
 #include "VulkanApi.h"
+#include "ProceduralCompute.h"
 
 namespace app {
 
@@ -15,6 +16,8 @@ public:
 private:
 	Window m_window;
 	vk::Context m_context;
+	ProceduralCompute m_compute;
+	std::vector<vk::CommandBuffer> m_commandBuffers;
 };
 
 }

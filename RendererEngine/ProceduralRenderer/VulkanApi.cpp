@@ -527,7 +527,40 @@ void SwapChain::create(const vk::PhysicalDevice &physicalDevice, const vk::Devic
 	uint32_t imageCount;
 	VK_CHECK_RESULT(vkGetSwapchainImagesKHR(device(), m_swapChain, &imageCount, nullptr));
 	m_images.resize(imageCount);
+	m_views.resize(imageCount);
 	VK_CHECK_RESULT(vkGetSwapchainImagesKHR(device(), m_swapChain, &imageCount, m_images.data()));
+
+	// Image views
+	for (size_t imageID = 0; imageID < m_images.size(); imageID++)
+	{
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = m_images[imageID];
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = surfaceFormat.format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+		VkImageView imageView;
+		VK_CHECK_RESULT(vkCreateImageView(device(), &viewInfo, nullptr, &imageView));
+		m_views[imageID] = imageView;
+	}
+
+	// Frames
+	VkSemaphoreCreateInfo semaphoreInfo = {};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceInfo = {};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < maxFramesInFlight; i++) {
+		VK_CHECK_RESULT(vkCreateSemaphore(device(), &semaphoreInfo, nullptr, &m_frames[i].imageAvailableSemaphore));
+		VK_CHECK_RESULT(vkCreateSemaphore(device(), &semaphoreInfo, nullptr, &m_frames[i].renderFinishedSemaphore));
+		VK_CHECK_RESULT(vkCreateFence(device(), &fenceInfo, nullptr, &m_frames[i].inFlightFence));
+	}
 }
 
 void SwapChain::destroy(const vk::Device &device)
@@ -535,18 +568,125 @@ void SwapChain::destroy(const vk::Device &device)
 	vkDestroySwapchainKHR(device(), m_swapChain, nullptr);
 }
 
+bool SwapChain::acquireNextFrame(const vk::Device &device, SwapChainFrame *frame)
+{
+	// Get the next image index.
+	*frame = m_frames[m_currentFrameIndex];
+	frame->wait(device());
+
+	VkResult result = vkAcquireNextImageKHR(
+		device(),
+		m_swapChain,
+		(std::numeric_limits<uint64_t>::max)(),
+		frame->imageAvailableSemaphore,
+		VK_NULL_HANDLE,
+		&m_currentFrameIndex
+	);
+	if (result != VK_SUCCESS)
+		throw std::runtime_error("failed to acquire swapchain image");
+	bool needRecreation = (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR);
+
+	frame->imageIndex = m_currentFrameIndex;
+	// TODO check image finished rendering ?
+	// If less image than frames in flight, might be necessary
+	return needRecreation;
+}
+
+bool SwapChain::presentFrame(const vk::Device &device, const SwapChainFrame & frame)
+{
+	VkSemaphore signalSemaphores[] = { frame.renderFinishedSemaphore };
+	VkSwapchainKHR swapChains[] = { m_swapChain };
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &frame.imageIndex;
+	presentInfo.pResults = nullptr; // Optional
+
+	VkResult result = vkQueuePresentKHR(device.getPresentQueue().queue, &presentInfo);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		VK_CHECK_RESULT(vkQueueWaitIdle(device.getPresentQueue().queue));
+		return true;
+	}
+	else if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to present swap chain image!");
+		VK_CHECK_RESULT(vkQueueWaitIdle(device.getPresentQueue().queue));
+	}
+	m_currentFrameIndex = (m_currentFrameIndex + 1) % maxFramesInFlight;
+	return false;
+}
+
 Context::Context(const app::Window &window)
 {
 	std::vector<std::string> requiredInstanceExtensions = window.getRequiredInstanceExtensions();
-	instance.create(requiredInstanceExtensions);
-	surface.create(instance, window);
-	physicalDevice.create(instance);
-	device.create(physicalDevice, surface);
-	swapChain.create(physicalDevice, device, surface);
+	m_instance.create(requiredInstanceExtensions);
+	m_surface.create(m_instance, window);
+	m_physicalDevice.create(m_instance);
+	m_device.create(m_physicalDevice, m_surface);
+	m_swapChain.create(m_physicalDevice, m_device, m_surface);
 }
 
 Context::~Context()
 {
+}
+
+uint32_t Context::getWidth() const
+{
+	// TODO simplify
+	VkSurfaceCapabilitiesKHR capabilities;
+	VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice(), m_surface(), &capabilities));
+	return m_surface.getExtent(m_physicalDevice, capabilities).width;
+}
+
+uint32_t Context::getHeight() const
+{
+	// TODO simplify
+	VkSurfaceCapabilitiesKHR capabilities;
+	VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice(), m_surface(), &capabilities));
+	return m_surface.getExtent(m_physicalDevice, capabilities).height;
+}
+
+bool Context::acquireNextFrame(vk::SwapChainFrame * frame)
+{
+	return m_swapChain.acquireNextFrame(m_device, frame);
+}
+
+bool Context::presentFrame(const vk::SwapChainFrame & frame)
+{
+	return m_swapChain.presentFrame(m_device, frame);
+}
+
+void SwapChainFrame::wait(VkDevice device)
+{
+	VK_CHECK_RESULT(vkWaitForFences(
+		device,
+		1, 
+		&inFlightFence, 
+		VK_TRUE, 
+		(std::numeric_limits<uint64_t>::max)()
+	));
+}
+
+void CommandBuffer::begin()
+{
+	vkResetCommandBuffer(m_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+	VkCommandBufferBeginInfo beginInfo {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;// SIMULTANEOUS_USE_BIT;
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(m_commandBuffer, &beginInfo));
+}
+
+void CommandBuffer::end()
+{
+	VK_CHECK_RESULT(vkEndCommandBuffer(m_commandBuffer));
 }
 
 }
