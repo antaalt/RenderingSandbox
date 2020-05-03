@@ -70,6 +70,7 @@ void Application::execute()
 		cmdBuff.end();
 
 		submit(m_context.getDevice(), m_context.getDevice().getGraphicQueue(), frame, cmdBuff);
+		vkDeviceWaitIdle(m_context.getDevice()());
 
 		m_context.presentFrame(frame);
 

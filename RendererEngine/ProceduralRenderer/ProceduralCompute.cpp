@@ -23,9 +23,10 @@ VkShaderModule createShaderModule(const vk::Device &device, const std::string &f
 		throw std::runtime_error("VULKAN_SDK not found");
 	char buffer[256];
 	snprintf(buffer, 256, "%s/Bin32/glslangValidator.exe -V %s -o %s", env, filePath.c_str(), buildPath.c_str());
-
-	std::vector<uint8_t> code = loadFile("data/shaders/procedural.comp");
-	VkShaderModuleCreateInfo createInfo = {};
+	if (0 != system(buffer))
+		throw std::runtime_error("Error building");
+	std::vector<uint8_t> code = loadFile(buildPath);
+	VkShaderModuleCreateInfo createInfo {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
