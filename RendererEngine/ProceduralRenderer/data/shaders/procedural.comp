@@ -42,39 +42,87 @@ Ray generateRayForPixel(uint x, uint y)
 	return ray;
 }
 
-vec4 castRay(in Ray ray, out float dist)
+float height(float x, float z)
 {
-	vec2 uv = gl_GlobalInvocationID.xy/vec2(params.width, params.height);
-	float noise = cnoise(vec3(uv.x * 10.f, uv.y * 10.f, params.timeElapsed)) + 1.0 * 0.5;
-	return vec4(vec3(noise), 1);
-	/*if(true)
+#if 0
+	return -2;
+#elif 0
+	return sin(x) * sin(z) - 2;
+#else
+	return cnoise(vec3(x, z, 0/*params.timeElapsed*/)) + 1.0 * 0.5;
+#endif
+}
+// Central difference
+vec3 getNormal(vec3 p)
+{
+	const float eps = 0.01f;
+	return normalize(
+		vec3(
+			height(p.x - eps, p.z) - height(p.x + eps, p.z),
+			2.0f*eps,
+			height(p.x, p.z - eps) - height(p.x, p.z + eps)
+		)
+	);
+}
+// https://www.iquilezles.org/www/articles/terrainmarching/terrainmarching.htm
+bool castRay(in Ray ray, out float dist)
+{
+	const float dt = 0.1f;
+	const float mint = 0.001f;
+	const float maxt = 100.0f;
+	float lh = 0.0f;
+	float ly = 0.0f;
+	for(float t = mint; t < maxt; t += dt)
 	{
-		return terrainColor(ray, t);
+		const vec3 stepPos = ray.origin + ray.direction * t;
+		float h = height(stepPos.x, stepPos.z);
+		if(stepPos.y < h)
+		{
+			// interpolate the intersection distance
+			dist = t - dt + dt*(lh-ly)/(stepPos.y-ly-h+lh);
+			return true;
+		}
+		// allow the error to be proportinal to the distance
+		//dt = 0.01f*t;
+		lh = h;
+		ly = stepPos.y;
 	}
-	else
-	{
-		return skyColor();
-	}*/
+	return false;
 }
 
-vec4 terrainColor(in Ray, in float t)
+vec4 terrainColor(in Ray ray, in float t)
 {
-	return vec4(0, 1, 0, 1);
+	vec3 hitPoint = ray.origin + ray.direction * t;
+	return vec4(1) * dot(getNormal(hitPoint), vec3(0, 1, 0));
 }
 
 vec4 skyColor()
 {
-	return vec4(0, 0, 1, 1);
+	return vec4(0.5, 0.5, 1, 1);
 }
 
-
+// TODO map space bar to shader reloading.
 void main()
 {
 	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
-
+	
+	vec4 outputColor;
 	float t;
-	vec4 outColor = castRay(ray, t);
+	if(castRay(ray, t)) 
+	{
+		outputColor = terrainColor(ray, t);
+	}
+	else
+	{
+		outputColor = skyColor();
+	}
 #if 1
+	imageStore(
+		outputImage,
+		ivec2(gl_GlobalInvocationID.xy),
+		outputColor
+	);
+#elif 1
 	if(dot(ray.direction, vec3(0, 1, 0)) > 0.0)
 	{
 		imageStore(
