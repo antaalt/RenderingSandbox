@@ -225,6 +225,17 @@ namespace geometry {
 			)
 		);
 	}
+	inline mat4 mat4::perspective(math::Radian fov, float ratio, float nearZ, float farZ)
+	{
+		float f = 1.f / math::tan(fov() / 2.f);
+		float range = 1.f / (farZ - nearZ);
+		return mat4(
+			col(f / ratio, 0.f, 0.f, 0.f),
+			col(0.f, -f, 0.f, 0.f),
+			col(0.f, 0.f, (farZ + nearZ) * range, 1.f),
+			col(0.f, 0.0f, -(2.f * farZ * nearZ) * range, 0.f)
+		);
+	}
 	inline float mat4::det() const
 	{
 		return

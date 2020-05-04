@@ -133,6 +133,18 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Engine\math\color32.h" />
+    <ClInclude Include="..\Engine\math\colorHDR.h" />
+    <ClInclude Include="..\Engine\math\mat3.h" />
+    <ClInclude Include="..\Engine\math\mat4.h" />
+    <ClInclude Include="..\Engine\math\norm3.h" />
+    <ClInclude Include="..\Engine\math\point3.h" />
+    <ClInclude Include="..\Engine\math\print.h" />
+    <ClInclude Include="..\Engine\math\quat.h" />
+    <ClInclude Include="..\Engine\math\scientific.h" />
+    <ClInclude Include="..\Engine\math\uv2.h" />
+    <ClInclude Include="..\Engine\math\vec2.h" />
+    <ClInclude Include="..\Engine\math\vec3.h" />
     <ClInclude Include="..\libs\imgui\examples\imgui_impl_glfw.h" />
     <ClInclude Include="..\libs\imgui\examples\imgui_impl_vulkan.h" />
     <ClInclude Include="..\libs\imgui\imconfig.h" />
@@ -147,6 +159,18 @@
     <ClInclude Include="VulkanApi.h" />
     <ClInclude Include="VulkanExtensions.h" />
     <ClInclude Include="Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Engine\math\color32.inl" />
+    <None Include="..\Engine\math\colorHDR.inl" />
+    <None Include="..\Engine\math\mat3.inl" />
+    <None Include="..\Engine\math\mat4.inl" />
+    <None Include="..\Engine\math\norm3.inl" />
+    <None Include="..\Engine\math\point3.inl" />
+    <None Include="..\Engine\math\quat.inl" />
+    <None Include="..\Engine\math\uv2.inl" />
+    <None Include="..\Engine\math\vec2.inl" />
+    <None Include="..\Engine\math\vec3.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

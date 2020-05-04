@@ -220,11 +220,12 @@ void ProceduralCompute::update(const vk::Context &context, const geo::mat4 &view
 	vkUpdateDescriptorSets(context.getLogicalDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 	// --- UBO
+	float ratio = context.getWidth() / (float)context.getHeight();
 	for (size_t iUbo = 0; iUbo < m_uniformBuffers.size(); iUbo++)
 	{
 		static UniformBufferObject ubo = {};
 		ubo.view = geo::mat4::inverse(viewInverse);
-		ubo.proj = geo::mat4::identity(); // TODO compute it
+		ubo.proj = geo::mat4::perspective(90.f, ratio, 0.1f, 1000.f);
 		ubo.viewInverse = viewInverse;
 		ubo.projInverse = geo::mat4::inverse(ubo.proj);
 		ubo.model = geo::mat4::identity();

@@ -19,6 +19,9 @@
     <Filter Include="Header Files\IMGUI">
       <UniqueIdentifier>{c9668eae-c80f-4642-8bef-81f2a49e61fd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{6afc4f83-c8ae-4ff6-b098-a47a32f4952b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -98,5 +101,73 @@
     <ClInclude Include="..\libs\imgui\examples\imgui_impl_vulkan.h">
       <Filter>Header Files\IMGUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\Engine\math\color32.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\colorHDR.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\mat3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\mat4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\norm3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\point3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\print.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\quat.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\scientific.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\uv2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\vec2.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Engine\math\vec3.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Engine\math\color32.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\colorHDR.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\mat3.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\mat4.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\norm3.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\point3.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\quat.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\uv2.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\vec2.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
+    <None Include="..\Engine\math\vec3.inl">
+      <Filter>Header Files\Math</Filter>
+    </None>
   </ItemGroup>
 </Project>

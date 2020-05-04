@@ -28,20 +28,17 @@ const float pi = 3.14159;
 
 Ray generateRayForPixel(uint x, uint y)
 {
-	vec2 uv = vec2(
-		x / float(params.width),
-		y / float(params.height)
-	);
-	float ratio = 16.0 / 9.0;
-	float fov = 90.0;
-	float filmWidth = 1.0 / tan(fov * pi / 180.0);
+	const vec2 subpixelJitter = vec2(0);
+	const vec2 pixelPos = gl_GlobalInvocationID.xy;
+	const vec2 pixelDim = vec2(params.width, params.height);
+	const vec2 texcoord = (pixelPos + subpixelJitter) / pixelDim;
+	const vec2 screenPos = texcoord * 2.0 - 1.0;
+	const vec4 camPos    = cam.viewInverse * vec4(0, 0, 0, 1);
+	const vec4 camTarget = cam.projInverse * vec4(screenPos.x, screenPos.y, 1, 1);
+	const vec4 camDir    = cam.viewInverse * vec4(normalize(camTarget.xyz), 0);
 	Ray ray;
-	ray.origin = vec3(0,0,0);
-	ray.direction = normalize(vec3(
-		(uv.x * 2.0 - 1.0) * filmWidth,
-		(uv.y * 2.0 - 1.0) * filmWidth * ratio,
-		1
-	));
+	ray.origin = camPos.xyz;
+	ray.direction = camDir.xyz;
 	return ray;
 }
 
@@ -77,9 +74,29 @@ void main()
 
 	float t;
 	vec4 outColor = castRay(ray, t);
+#if 1
+	if(dot(ray.direction, vec3(0, 1, 0)) > 0.0)
+	{
+		imageStore(
+			outputImage,
+			ivec2(gl_GlobalInvocationID.xy),
+			vec4(vec3(0), 1)
+			//vec4(ray.direction, 1)//outColor
+		);
+	}
+	else
+	{
+		imageStore(
+			outputImage,
+			ivec2(gl_GlobalInvocationID.xy),
+			vec4(vec3(1), 1)//outColor
+		);
+	}
+#else
 	imageStore(
 		outputImage,
 		ivec2(gl_GlobalInvocationID.xy),
 		vec4(ray.direction, 1)//outColor
 	);
+#endif
 }

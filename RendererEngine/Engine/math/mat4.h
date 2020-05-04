@@ -37,6 +37,7 @@ namespace geometry {
 		static mat4 scale(const vec3 &scale);
 		static mat4 TRS(const vec3 & t, const quat & r, const vec3 & s);
 		static mat4 inverse(const mat4 &mat);
+		static mat4 perspective(math::Radian fov, float ratio, float nearZ, float farZ);
 		float det() const;
 	};
 
