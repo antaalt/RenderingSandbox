@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\IMGUI">
+      <UniqueIdentifier>{fb01f1e7-59ea-4851-8fcd-761ff4f07b26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IMGUI">
+      <UniqueIdentifier>{c9668eae-c80f-4642-8bef-81f2a49e61fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -33,6 +39,21 @@
     <ClCompile Include="ProceduralCompute.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\libs\imgui\examples\imgui_impl_glfw.cpp">
+      <Filter>Source Files\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\imgui\examples\imgui_impl_vulkan.cpp">
+      <Filter>Source Files\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\imgui\imgui.cpp">
+      <Filter>Source Files\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\imgui\imgui_draw.cpp">
+      <Filter>Source Files\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\imgui\imgui_widgets.cpp">
+      <Filter>Source Files\IMGUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -49,6 +70,33 @@
     </ClInclude>
     <ClInclude Include="ProceduralCompute.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imconfig.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imgui.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imgui_internal.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imstb_rectpack.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imstb_textedit.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\imstb_truetype.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\examples\imgui_impl_glfw.h">
+      <Filter>Header Files\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\imgui\examples\imgui_impl_vulkan.h">
+      <Filter>Header Files\IMGUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

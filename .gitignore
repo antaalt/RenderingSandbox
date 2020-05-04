@@ -3,11 +3,16 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+imgui.ini
+
 # User-specific files
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+
+# Vulkan
+*.spv
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

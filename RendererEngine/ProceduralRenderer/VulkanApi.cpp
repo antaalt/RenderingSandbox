@@ -653,6 +653,41 @@ uint32_t Context::getHeight() const
 	return m_surface.getExtent(m_physicalDevice, capabilities).height;
 }
 
+VkCommandBuffer Context::createSingleTimeCommand() const
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = m_device.getCommandPool();
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device(), &allocInfo, &commandBuffer));
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+	return commandBuffer;
+}
+
+void Context::endSingleTimeCommand(VkCommandBuffer commandBuffer) const
+{
+	VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	VK_CHECK_RESULT(vkQueueSubmit(m_device.getGraphicQueue().queue, 1, &submitInfo, VK_NULL_HANDLE));
+	VK_CHECK_RESULT(vkQueueWaitIdle(m_device.getGraphicQueue().queue));
+
+	vkFreeCommandBuffers(m_device(), m_device.getCommandPool(), 1, &commandBuffer);
+}
+
 bool Context::acquireNextFrame(vk::SwapChainFrame * frame)
 {
 	return m_swapChain.acquireNextFrame(m_device, frame);

@@ -185,10 +185,21 @@ struct Context {
 	uint32_t getWidth() const;
 	uint32_t getHeight() const;
 
-	const Device &getDevice() const { return m_device; }
+	// Handles
+	VkInstance getInstance() const { return m_instance(); }
+	VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice(); }
+	VkDevice getLogicalDevice() const { return m_device(); }
+	uint32_t getGraphicQueueHandle() const { return m_device.getGraphicQueue().handle(); }
+	VkQueue getGraphicQueue() const { return m_device.getGraphicQueue().queue; }
+	VkCommandPool getCommandPool() const { return m_device.getCommandPool(); }
+
+	VkCommandBuffer createSingleTimeCommand() const;
+	void endSingleTimeCommand(VkCommandBuffer commandBuffer) const;
+
+	// Swap chain
 	VkImageView getImageView(uint32_t imageIndex) const { return m_swapChain.getImageView(imageIndex); }
 	uint32_t getImageCount() const { return m_swapChain.getImageCount(); }
-
+	VkFormat getFormat() const { return m_surface.getFormat(m_physicalDevice).format; }
 	bool acquireNextFrame(vk::SwapChainFrame *frame);
 	bool presentFrame(const vk::SwapChainFrame &frame);
 

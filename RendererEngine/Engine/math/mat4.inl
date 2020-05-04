@@ -171,11 +171,11 @@ namespace geometry {
 			mat4::col(math::real_t(0), math::real_t(0), math::real_t(0), math::real_t(1))
 		);
 	}
-	inline mat4 TRS(const vec3 & t, const quat & r, const vec3 & s)
+	inline mat4 mat4::TRS(const vec3 & t, const quat & r, const vec3 & s)
 	{
 		return mat4::translate(t) * mat4(r) * mat4::scale(s);
 	}
-	inline mat4 inverse(const mat4 &mat)
+	inline mat4 mat4::inverse(const mat4 &mat)
 	{
 		float A2323 = mat[2][2] * mat[3][3] - mat[2][3] * mat[3][2];
 		float A1323 = mat[2][1] * mat[3][3] - mat[2][3] * mat[3][1];

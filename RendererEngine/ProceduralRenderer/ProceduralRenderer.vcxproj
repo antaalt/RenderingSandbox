@@ -86,7 +86,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)libs\glfw-3.3.2\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs\glfw-3.3.2\include;$(SolutionDir)libs\imgui;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)libs\glfw-3.3.2\lib\x64;$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -120,6 +120,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\libs\imgui\examples\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\libs\imgui\examples\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="..\libs\imgui\imgui.cpp" />
+    <ClCompile Include="..\libs\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\libs\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProceduralCompute.cpp" />
@@ -128,7 +133,16 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\libs\imgui\examples\imgui_impl_glfw.h" />
+    <ClInclude Include="..\libs\imgui\examples\imgui_impl_vulkan.h" />
+    <ClInclude Include="..\libs\imgui\imconfig.h" />
+    <ClInclude Include="..\libs\imgui\imgui.h" />
+    <ClInclude Include="..\libs\imgui\imgui_internal.h" />
+    <ClInclude Include="..\libs\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\libs\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\libs\imgui\imstb_truetype.h" />
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="ProceduralCompute.h" />
     <ClInclude Include="VulkanApi.h" />
     <ClInclude Include="VulkanExtensions.h" />
