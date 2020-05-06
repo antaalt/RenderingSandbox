@@ -698,6 +698,35 @@ bool Context::presentFrame(const vk::SwapChainFrame & frame)
 	return m_swapChain.presentFrame(m_device, frame);
 }
 
+VkShaderModule createShaderModule(const VkDevice device, const std::vector<char>& code) {
+	VkShaderModuleCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
+	VkShaderModule shaderModule;
+	VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
+	return shaderModule;
+}
+void Context::registerShader(const std::string & name, const std::vector<char>& code)
+{
+	m_shaders.insert(std::make_pair(name, createShaderModule(m_device(), code)));
+}
+
+VkShaderModule Context::getShader(const std::string & name) const
+{
+	auto it = m_shaders.find(name);
+	if (it == m_shaders.end())
+		throw std::runtime_error("Shader not found : " + name);
+	return it->second;
+}
+
+void Context::destroyShaders()
+{
+	for (const std::pair<std::string, VkShaderModule> &shader : m_shaders)
+		vkDestroyShaderModule(m_device(), shader.second, nullptr);
+	m_shaders.clear();
+}
+
 void SwapChainFrame::wait(VkDevice device)
 {
 	VK_CHECK_RESULT(vkWaitForFences(

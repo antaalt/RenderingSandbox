@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <iostream>
+#include <fstream>
 
 #include "Geometry.h"
 
@@ -10,13 +11,26 @@
 
 namespace app {
 
+std::vector<std::string> shaders = {
+	"procedural.comp",
+};
+
+std::vector<char> loadFile(const std::string &str)
+{
+	std::ifstream file(str, std::ios::binary | std::ios::ate);
+	std::streampos size = file.tellg();
+	file.seekg(0);
+	std::vector<char> content(size);
+	file.read(content.data(), content.size());
+	return content;
+}
+
 Application::Application() :
 	m_window(),
 	m_context(m_window),
 	m_compute(),
 	m_transform(geo::mat4::identity())
 {
-	m_compute.create(m_context);
 
 	const uint32_t imageCount = static_cast<uint32_t>(m_context.getImageCount());
 	const uint32_t commandBufferCount = imageCount * 2;
@@ -36,18 +50,23 @@ Application::Application() :
 		m_commandBuffers[iImage].set(commandBuffers[iImage], iImage);
 	}
 	m_gui.create(m_context, m_window);
+
+
+	if (!buildShaders())
+		throw std::runtime_error("Cannot build shaders");
+	createStages();
 }
 
 
 Application::~Application()
 {
+	destroyStages();
 	m_gui.destroy(m_context);
 	std::vector<VkCommandBuffer> commandBuffers(m_context.getImageCount());
 	for (uint32_t iImage = 0; iImage < m_context.getImageCount(); iImage++)
 		commandBuffers[iImage] = m_commandBuffers[iImage]();
 
 	vkFreeCommandBuffers(m_context.getLogicalDevice(), m_context.getCommandPool(), m_context.getImageCount(), commandBuffers.data());
-	m_compute.destroy(m_context);
 }
 
 void submit(VkDevice device, VkQueue queue, const vk::SwapChainFrame &frame, const vk::CommandBuffer &commandBuffer) {
@@ -115,6 +134,10 @@ bool Application::inputs()
 		m_transform = m_transform * geo::mat4::translate(geo::vec3(0.f, 0.f, io.MouseWheel * 100.f));
 		updated = true;
 	}
+	if (io.KeysDown[GLFW_KEY_SPACE])
+	{
+		recreate();
+	}
 	return false;
 }
 
@@ -142,9 +165,52 @@ void Application::execute()
 		m_gui.render(frame.imageIndex, m_context);
 
 		m_context.presentFrame(frame);
-
-		std::cout << m_transform << std::endl;
 	});
+}
+
+void Application::createStages()
+{
+	// Register
+	for (const std::string &shader : shaders)
+		m_context.registerShader(shader, loadFile("data/shaders/" + shader + ".spv"));
+	// Pass
+	m_compute.create(m_context);
+
+	// Clean
+	m_context.destroyShaders();
+}
+
+void Application::destroyStages()
+{
+	m_compute.destroy(m_context);
+}
+
+void Application::recreate()
+{
+	if (!buildShaders())
+		return;
+	destroyStages();
+	createStages();
+}
+
+bool Application::buildShaders()
+{
+	std::cout << "--- Building shaders..." << std::endl;
+	for (const std::string &shader : shaders)
+	{
+		std::string filePath = "data/shaders/" + shader;
+		std::string buildPath = filePath + ".spv";
+		char *env;
+		size_t size;
+		_dupenv_s(&env, &size, "VULKAN_SDK");
+		if (size == 0)
+			return false;
+		char buffer[256];
+		snprintf(buffer, 256, "%s/Bin32/glslangValidator.exe -V %s -o %s", env, filePath.c_str(), buildPath.c_str());
+		if (0 != system(buffer))
+			return false;
+	}
+	return true;
 }
 
 

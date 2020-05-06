@@ -29,6 +29,11 @@ public:
 
 	bool inputs();
 	void execute();
+
+	void recreate();
+	bool buildShaders();
+	void createStages();
+	void destroyStages();
 private:
 	Window m_window;
 	vk::Context m_context;

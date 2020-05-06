@@ -5,37 +5,6 @@
 
 namespace app {
 
-std::vector<uint8_t> loadFile(const std::string &str)
-{
-	std::basic_ifstream<uint8_t> file(str, std::ios::binary | std::ios::ate);
-	std::streampos size = file.tellg();
-	file.seekg(0);
-	std::vector<uint8_t> content(size);
-	file.read(content.data(), content.size());
-	return content;
-}
-
-VkShaderModule createShaderModule(const VkDevice device, const std::string &filePath) {
-	std::string buildPath = filePath + ".spv";
-	char *env;
-	size_t size;
-	_dupenv_s(&env, &size, "VULKAN_SDK");
-	if (size == 0)
-		throw std::runtime_error("VULKAN_SDK not found");
-	char buffer[256];
-	snprintf(buffer, 256, "%s/Bin32/glslangValidator.exe -V %s -o %s", env, filePath.c_str(), buildPath.c_str());
-	if (0 != system(buffer))
-		throw std::runtime_error("Error building");
-	std::vector<uint8_t> code = loadFile(buildPath);
-	VkShaderModuleCreateInfo createInfo {};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-	VkShaderModule shaderModule;
-	VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
-	return shaderModule;
-}
-
 uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -100,7 +69,7 @@ void ProceduralCompute::create(const vk::Context & context)
 	VK_CHECK_RESULT(vkAllocateDescriptorSets(context.getLogicalDevice(), &allocInfo, &m_descriptorSet));
 
 	// Pipeline
-	VkShaderModule shaderModule = createShaderModule(context.getLogicalDevice(), "data/shaders/procedural.comp");
+	VkShaderModule shaderModule = context.getShader("procedural.comp");
 
 	VkPipelineShaderStageCreateInfo shaderStageInfo{};
 	shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

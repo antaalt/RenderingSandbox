@@ -3,6 +3,7 @@
 #include <vulkan\vulkan.h>
 #include <vector>
 #include <array>
+#include <map>
 
 #include "Window.h"
 
@@ -203,12 +204,19 @@ struct Context {
 	bool acquireNextFrame(vk::SwapChainFrame *frame);
 	bool presentFrame(const vk::SwapChainFrame &frame);
 
+	// Shaders
+	void registerShader(const std::string &name, const std::vector<char> &code);
+	VkShaderModule getShader(const std::string &name) const;
+	void destroyShaders();
+
 private:
 	vk::Instance m_instance;
 	vk::Surface m_surface;
 	vk::PhysicalDevice m_physicalDevice;
 	vk::Device m_device;
 	vk::SwapChain m_swapChain;
+private:
+	std::map<std::string, VkShaderModule> m_shaders;
 };
 
 struct CommandBuffer {
