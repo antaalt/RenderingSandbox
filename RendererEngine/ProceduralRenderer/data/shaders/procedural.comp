@@ -5,7 +5,7 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
-layout(set = 0, binding = 0, rgba8) uniform writeonly image2D outputImage;
+layout(set = 0, binding = 0, rgba8) uniform image2D outputImage;
 layout(set = 0, binding = 1) uniform CameraProperty { 
 	mat4 view;
 	mat4 proj;
@@ -14,6 +14,7 @@ layout(set = 0, binding = 1) uniform CameraProperty {
 } cam;
 
 layout(push_constant) uniform Params {
+	uint samples;
 	uint width;
 	uint height;
 	float timeElapsed;
@@ -26,9 +27,21 @@ struct Ray {
 
 const float pi = 3.14159;
 
+// TODO 
+// - Add reflection path tracing (as raymarching.)
+// - Control octave with ImGui
+// - Better camera movement
+// -
+// https://wangyasai.github.io/Perlin-Noise/
+// https://gpfault.net/posts/perlin-noise.txt.html
+// https://www.iquilezles.org/www/articles/terrainmarching/terrainmarching.htm
+// https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
+// https://computergraphics.stackexchange.com/questions/161/what-is-ray-marching-is-sphere-tracing-the-same-thing
+
 Ray generateRayForPixel(uint x, uint y)
 {
-	const vec2 subpixelJitter = vec2(0);
+	uint seed = genFirstSeed(x, y + params.samples);
+	const vec2 subpixelJitter = vec2(rnd(seed), rnd(seed));// vec2(noise(vec2(x, y + params.samples)) - 0.5, noise(vec2(y, x+ params.samples)) - 0.5);
 	const vec2 pixelPos = gl_GlobalInvocationID.xy;
 	const vec2 pixelDim = vec2(params.width, params.height);
 	const vec2 texcoord = (pixelPos + subpixelJitter) / pixelDim;
@@ -44,13 +57,22 @@ Ray generateRayForPixel(uint x, uint y)
 
 float height(float x, float z)
 {
-#if 0
-	return -2;
-#elif 0
-	return sin(x) * sin(z) - 2;
-#else
-	return cnoise(vec3(x, z, 0/*params.timeElapsed*/)) + 1.0 * 0.5;
-#endif
+	// First octave
+	const float freq1 = 100;
+	const float amp1 = 50.0;
+	const float octave1 = noise(vec2(x, z) / freq1) * amp1;
+	
+	// Second octave
+	const float freq2 = 0.5;
+	const float amp2 = 0.1;
+	const float octave2 = noise(vec2(x, z) / freq2) * amp2;
+	
+	// Third octave
+	const float freq3 = 20;
+	const float amp3 = 2.0;
+	const float octave3 = noise(vec2(x, z) / freq3) * amp3;
+	
+	return max(octave1 + octave2 * octave1 / amp1 + octave3 + 10, 0);
 }
 // Central difference
 vec3 getNormal(vec3 p)
@@ -64,26 +86,27 @@ vec3 getNormal(vec3 p)
 		)
 	);
 }
-// https://www.iquilezles.org/www/articles/terrainmarching/terrainmarching.htm
 bool castRay(in Ray ray, out float dist)
 {
-	const float dt = 0.1f;
+	const float dt = 1.0f;
 	const float mint = 0.001f;
-	const float maxt = 100.0f;
+	const float maxt = 1000.0f;
 	float lh = 0.0f;
 	float ly = 0.0f;
-	for(float t = mint; t < maxt; t += dt)
+	float ld = 0.0f;
+	for(float t = mint; t < maxt;)
 	{
 		const vec3 stepPos = ray.origin + ray.direction * t;
-		float h = height(stepPos.x, stepPos.z);
+		const float h = height(stepPos.x, stepPos.z);
+		const float delta = max(h, dt);
 		if(stepPos.y < h)
 		{
 			// interpolate the intersection distance
-			dist = t - dt + dt*(lh-ly)/(stepPos.y-ly-h+lh);
+			dist = t - ld + ld*(lh-ly)/(stepPos.y-ly-h+lh);
 			return true;
 		}
-		// allow the error to be proportinal to the distance
-		//dt = 0.01f*t;
+		t += delta;
+		ld = delta;
 		lh = h;
 		ly = stepPos.y;
 	}
@@ -92,16 +115,46 @@ bool castRay(in Ray ray, out float dist)
 
 vec4 terrainColor(in Ray ray, in float t)
 {
-	vec3 hitPoint = ray.origin + ray.direction * t;
-	return vec4(1) * dot(getNormal(hitPoint), vec3(0, 1, 0));
+	const vec3 hitPoint = ray.origin + ray.direction * t;
+
+	const vec4 colorWater = vec4(0.17, 0.61, 0.83, 1);
+	const vec4 colorCliff = vec4(0.17, 0.63, 0.31, 1.0);
+	const vec4 colorEdges = vec4(1, 1, 1, 1);
+	
+	float limit = noise(vec2(hitPoint.x, hitPoint.z) / 0.5);
+	
+	vec4 color;
+	if(hitPoint.y < 0.01)
+	{
+		color = colorWater;
+	}
+#if 0
+	else
+	{
+		color = mix(colorCliff, colorEdges, limit);
+	}
+#else
+	else if(hitPoint.y < limit * 10 + 10) // noisy transition
+	{
+		color = colorCliff;
+	}
+	else 
+	{
+		color = colorEdges;
+	}
+#endif
+	const vec3 normal = getNormal(hitPoint);
+	const vec3 lightDir = -ray.direction;
+	return color * dot(normal, lightDir);
 }
 
-vec4 skyColor()
+vec4 skyColor(in Ray ray)
 {
-	return vec4(0.5, 0.5, 1, 1);
+	const vec4 upSky = vec4(0.09, 0.51, 1.0, 1);
+	const vec4 downSky = vec4(0.38, 0.75, 1.0, 1);
+	return mix(downSky, upSky, dot(ray.direction, vec3(0, 1, 0)));
 }
 
-// TODO map space bar to shader reloading.
 void main()
 {
 	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
@@ -114,22 +167,14 @@ void main()
 	}
 	else
 	{
-		outputColor = skyColor();
+		outputColor = skyColor(ray);
 	}
-#if 1
-	imageStore(
-		outputImage,
-		ivec2(gl_GlobalInvocationID.xy),
-		outputColor
-	);
-#elif 1
-	if(dot(ray.direction, vec3(0, 1, 0)) > 0.0)
+	if(params.samples == 0)
 	{
 		imageStore(
 			outputImage,
 			ivec2(gl_GlobalInvocationID.xy),
-			vec4(vec3(0), 1)
-			//vec4(ray.direction, 1)//outColor
+			outputColor
 		);
 	}
 	else
@@ -137,14 +182,7 @@ void main()
 		imageStore(
 			outputImage,
 			ivec2(gl_GlobalInvocationID.xy),
-			vec4(vec3(1), 1)//outColor
+			mix(imageLoad(outputImage, ivec2(gl_GlobalInvocationID.xy)), outputColor, 1.f / (params.samples + 1.f))
 		);
 	}
-#else
-	imageStore(
-		outputImage,
-		ivec2(gl_GlobalInvocationID.xy),
-		vec4(ray.direction, 1)//outColor
-	);
-#endif
 }

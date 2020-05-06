@@ -1,20 +1,85 @@
 #ifndef _NOISE_H_
 #define _NOISE_H_
 
+uint lcg(inout uint prev)
+{
+	const uint LCG_A = 1664525u;
+	const uint LCG_C = 1013904223u;
+	prev = (LCG_A * prev + LCG_C);
+	return prev & 0x00FFFFFF;
+}
+
+// Generate random float in [0, 1)
+float rnd(inout uint prev)
+{
+	return (float(lcg(prev)) / float(0x01000000));
+}
+
+// Generate random unsigned int in [0, 2^24) given two values.
+uint genFirstSeed(uint val0, uint val1)
+{
+	uint v0 = val0;
+	uint v1 = val1;
+	uint s0 = 0;
+
+	for (uint n = 0; n < 8; n++)
+	{
+		s0 += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+	}
+
+	return v0;
+}
+
+//	Classic Perlin 2D Noise 
+//	by Stefan Gustavson
+//
+vec4 permute(vec4 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+vec2 fade(vec2 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
+
+float noise(vec2 P)
+{
+	vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
+	vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+	Pi = mod(Pi, 289.0); // To avoid truncation effects in permutation
+	vec4 ix = Pi.xzxz;
+	vec4 iy = Pi.yyww;
+	vec4 fx = Pf.xzxz;
+	vec4 fy = Pf.yyww;
+	vec4 i = permute(permute(ix) + iy);
+	vec4 gx = 2.0 * fract(i * 0.0243902439) - 1.0; // 1/41 = 0.024...
+	vec4 gy = abs(gx) - 0.5;
+	vec4 tx = floor(gx + 0.5);
+	gx = gx - tx;
+	vec2 g00 = vec2(gx.x,gy.x);
+	vec2 g10 = vec2(gx.y,gy.y);
+	vec2 g01 = vec2(gx.z,gy.z);
+	vec2 g11 = vec2(gx.w,gy.w);
+	vec4 norm = 1.79284291400159 - 0.85373472095314 * 
+	vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11));
+	g00 *= norm.x;
+	g01 *= norm.y;
+	g10 *= norm.z;
+	g11 *= norm.w;
+	float n00 = dot(g00, vec2(fx.x, fy.x));
+	float n10 = dot(g10, vec2(fx.y, fy.y));
+	float n01 = dot(g01, vec2(fx.z, fy.z));
+	float n11 = dot(g11, vec2(fx.w, fy.w));
+	vec2 fade_xy = fade(Pf.xy);
+	vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade_xy.x);
+	float n_xy = mix(n_x.x, n_x.y, fade_xy.y);
+	return 2.3 * n_xy;
+}
+
 //	Classic Perlin 3D Noise 
 //	by Stefan Gustavson
 //
-vec4 permute(vec4 x){
-	return mod(((x*34.0)+1.0)*x, 289.0);
-}
-vec4 taylorInvSqrt(vec4 r){
-	return 1.79284291400159 - 0.85373472095314 * r;
-}
-vec3 fade(vec3 t) {
-	return t*t*t*(t*(t*6.0-15.0)+10.0);
-}
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+vec3 fade(vec3 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
 
-float cnoise(vec3 P){
+float noise(vec3 P)
+{
 	vec3 Pi0 = floor(P); // Integer part for indexing
 	vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
 	Pi0 = mod(Pi0, 289.0);

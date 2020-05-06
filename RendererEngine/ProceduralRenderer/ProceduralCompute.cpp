@@ -150,6 +150,7 @@ void ProceduralCompute::execute(const vk::CommandBuffer &cmdBuff, const vk::Cont
 	{
 		using namespace std::chrono;
 		static time_point<steady_clock> time = steady_clock::now();
+		m_pushc.samples = m_samples++;
 		m_pushc.width = context.getWidth();
 		m_pushc.height = context.getHeight();
 		m_pushc.time = duration_cast<milliseconds>(steady_clock::now() - time).count() / 1000.f;
@@ -204,6 +205,11 @@ void ProceduralCompute::update(const vk::Context &context, const geo::mat4 &view
 		memcpy(data, &ubo, sizeof(UniformBufferObject));
 		vkUnmapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[iUbo]);
 	}
+}
+
+void ProceduralCompute::reset()
+{
+	m_samples = 0;
 }
 
 }

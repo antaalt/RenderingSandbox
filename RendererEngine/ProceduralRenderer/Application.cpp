@@ -29,7 +29,7 @@ Application::Application() :
 	m_window(),
 	m_context(m_window),
 	m_compute(),
-	m_transform(geo::mat4::identity())
+	m_transform(geo::mat4::translate(geo::vec3(0, 5, 0)))
 {
 
 	const uint32_t imageCount = static_cast<uint32_t>(m_context.getImageCount());
@@ -90,7 +90,7 @@ void submit(VkDevice device, VkQueue queue, const vk::SwapChainFrame &frame, con
 bool Application::inputs()
 {
 	// move to gui ?
-	bool updated = 0;
+	bool updated = false;
 
 	const float sensitivity = 0.01f;
 	const ImGuiIO &io = ImGui::GetIO();
@@ -138,7 +138,7 @@ bool Application::inputs()
 	{
 		recreate();
 	}
-	return false;
+	return updated;
 }
 
 void Application::execute()
@@ -146,7 +146,10 @@ void Application::execute()
 	m_window.loop([&]() {
 
 		m_gui.newFrame();
-		bool updated = inputs();
+		if (inputs())
+		{
+			m_compute.reset();
+		}
 
 		// Render
 		vk::SwapChainFrame frame;

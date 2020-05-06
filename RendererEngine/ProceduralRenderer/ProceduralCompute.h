@@ -11,6 +11,7 @@ namespace app {
 class ProceduralCompute
 {
 public:
+	ProceduralCompute() : m_samples(0) {}
 
 	void create(const vk::Context &context);
 	void destroy(const vk::Context &context);
@@ -21,9 +22,12 @@ public:
 
 	void setOutput(VkImageView imageView) { m_imageView = imageView; }
 
+	void reset();
+
 private:
 	struct alignas(16) PushConstant
 	{
+		uint32_t samples;
 		uint32_t width;
 		uint32_t height;
 		float time;
@@ -37,6 +41,8 @@ private:
 		geo::mat4 projInverse;
 		geo::mat4 model;
 	};
+
+	uint32_t m_samples;
 
 	VkPipeline m_pipeline;
 	VkPipelineLayout m_layout;
