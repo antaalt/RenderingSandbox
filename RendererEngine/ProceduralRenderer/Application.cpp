@@ -136,6 +136,7 @@ bool Application::inputs()
 	}
 	if (io.KeysDown[GLFW_KEY_SPACE])
 	{
+		m_compute.reset();
 		recreate();
 	}
 	return updated;
@@ -150,6 +151,9 @@ void Application::execute()
 		{
 			m_compute.reset();
 		}
+		Stats stats;
+		stats.samples = m_compute.getSampleCount();
+		m_gui.draw(stats);
 
 		// Render
 		vk::SwapChainFrame frame;
@@ -302,6 +306,16 @@ void GUI::newFrame()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+}
+
+void GUI::draw(const Stats &stats)
+{
+	static bool open = true;
+	if (ImGui::Begin("Stats", &open))
+	{
+		ImGui::Text("Samples : %u", stats.samples);
+	}
+	ImGui::End();
 }
 
 void GUI::render(uint32_t imageIndex, vk::Context &context)

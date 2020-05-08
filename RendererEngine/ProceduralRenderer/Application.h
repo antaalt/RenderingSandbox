@@ -6,12 +6,16 @@
 #include "Geometry.h"
 
 namespace app {
+struct Stats {
+	uint32_t samples;
+};
 
 struct GUI {
 	void create(const vk::Context &context, const app::Window &window);
 	void destroy(const vk::Context &context);
 
 	void newFrame();
+	void draw(const Stats &stats);
 	void render(uint32_t imageIndex, vk::Context &context);
 private:
 	void createRenderPass(const vk::Context &context);

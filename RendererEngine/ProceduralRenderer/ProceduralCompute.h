@@ -24,6 +24,8 @@ public:
 
 	void reset();
 
+	uint32_t getSampleCount() const { return m_samples; }
+
 private:
 	struct alignas(16) PushConstant
 	{

@@ -25,13 +25,17 @@ struct Ray {
 	vec3 direction;
 };
 
+struct Stat {
+	uint stepCount;
+};
+
 const float pi = 3.14159;
 
 // TODO 
 // - Add reflection path tracing (as raymarching.)
 // - Control octave with ImGui
 // - Better camera movement
-// -
+// - Restrain rendering in a cube (and render terrain like a model.)
 // https://wangyasai.github.io/Perlin-Noise/
 // https://gpfault.net/posts/perlin-noise.txt.html
 // https://www.iquilezles.org/www/articles/terrainmarching/terrainmarching.htm
@@ -57,7 +61,12 @@ Ray generateRayForPixel(uint x, uint y)
 
 float height(float x, float z)
 {
-	// First octave
+	// Zero octave 
+	const float freq0 = 10000;
+	const float amp0 = 100.0;
+	const float octave0 = noise(vec2(x, z) / freq0) * amp0;
+	
+	// First octave 
 	const float freq1 = 100;
 	const float amp1 = 50.0;
 	const float octave1 = noise(vec2(x, z) / freq1) * amp1;
@@ -72,7 +81,7 @@ float height(float x, float z)
 	const float amp3 = 2.0;
 	const float octave3 = noise(vec2(x, z) / freq3) * amp3;
 	
-	return max(octave1 + octave2 * octave1 / amp1 + octave3 + 10, 0);
+	return max(octave0 + octave1 + octave2 * octave1 / amp1 + octave3 + 10, 0);
 }
 // Central difference
 vec3 getNormal(vec3 p)
@@ -86,10 +95,10 @@ vec3 getNormal(vec3 p)
 		)
 	);
 }
-bool castRay(in Ray ray, out float dist)
+bool castRay(in Ray ray, out float dist, inout Stat stats)
 {
 	const float dt = 1.0f;
-	const float mint = 0.001f;
+	const float mint = 0.01f;
 	const float maxt = 1000.0f;
 	float lh = 0.0f;
 	float ly = 0.0f;
@@ -99,6 +108,7 @@ bool castRay(in Ray ray, out float dist)
 		const vec3 stepPos = ray.origin + ray.direction * t;
 		const float h = height(stepPos.x, stepPos.z);
 		const float delta = max(h, dt);
+		stats.stepCount++;
 		if(stepPos.y < h)
 		{
 			// interpolate the intersection distance
@@ -158,10 +168,11 @@ vec4 skyColor(in Ray ray)
 void main()
 {
 	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
-	
+	Stat stat;
+	stat.stepCount = 0;
 	vec4 outputColor;
 	float t;
-	if(castRay(ray, t)) 
+	if(castRay(ray, t, stat)) 
 	{
 		outputColor = terrainColor(ray, t);
 	}
@@ -169,6 +180,13 @@ void main()
 	{
 		outputColor = skyColor(ray);
 	}
+#if 0 // Heat map
+	imageStore(
+		outputImage,
+		ivec2(gl_GlobalInvocationID.xy),
+		vec4(stat.stepCount / 1000.0, 0, 0, 1)
+	);
+#else
 	if(params.samples == 0)
 	{
 		imageStore(
@@ -185,4 +203,5 @@ void main()
 			mix(imageLoad(outputImage, ivec2(gl_GlobalInvocationID.xy)), outputColor, 1.f / (params.samples + 1.f))
 		);
 	}
+#endif
 }
