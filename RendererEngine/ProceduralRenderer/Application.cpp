@@ -47,7 +47,7 @@ Application::Application() :
 	m_commandBuffers.resize(imageCount);
 	for (uint32_t iImage = 0; iImage < imageCount; iImage++)
 	{
-		m_commandBuffers[iImage].set(commandBuffers[iImage], iImage);
+		m_commandBuffers[iImage].set(commandBuffers[iImage], vk::ImageIndex(iImage));
 	}
 	m_gui.create(m_context, m_window);
 
@@ -138,6 +138,7 @@ bool Application::inputs()
 	{
 		m_compute.reset();
 		recreate();
+		updated = true;
 	}
 	return updated;
 }
@@ -159,12 +160,11 @@ void Application::execute()
 		vk::SwapChainFrame frame;
 		m_context.acquireNextFrame(&frame);
 
-		m_compute.setOutput(m_context.getImageView(frame.imageIndex));
-		m_compute.update(m_context, m_transform);
+		m_compute.update(frame.imageIndex, m_context, m_transform);
 
-		vk::CommandBuffer cmdBuff = m_commandBuffers[frame.imageIndex];
+		vk::CommandBuffer &cmdBuff = m_commandBuffers[frame.imageIndex()];
 		cmdBuff.begin();
-		m_compute.execute(cmdBuff, m_context);
+		m_compute.execute(frame.imageIndex, cmdBuff, m_context);
 		cmdBuff.end();
 
 		submit(m_context.getLogicalDevice(), m_context.getGraphicQueue(), frame, cmdBuff);
@@ -313,12 +313,14 @@ void GUI::draw(const Stats &stats)
 	static bool open = true;
 	if (ImGui::Begin("Stats", &open))
 	{
+		ImGuiIO &io = ImGui::GetIO();
+		ImGui::Text("%.1f FPS", io.Framerate);
 		ImGui::Text("Samples : %u", stats.samples);
 	}
 	ImGui::End();
 }
 
-void GUI::render(uint32_t imageIndex, vk::Context &context)
+void GUI::render(const vk::ImageIndex &imageIndex, vk::Context &context)
 {
 	// Rendering
 	ImGui::Render();
@@ -326,7 +328,7 @@ void GUI::render(uint32_t imageIndex, vk::Context &context)
 	VkRenderPassBeginInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_renderPass;
-	renderPassInfo.framebuffer = m_frames[imageIndex];
+	renderPassInfo.framebuffer = m_frames[imageIndex()];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = VkExtent2D{ context.getWidth(), context.getHeight() };
 	vkCmdBeginRenderPass(cmdBuff, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -379,7 +381,7 @@ void GUI::createRenderPass(const vk::Context &context)
 	for (uint32_t i = 0; i < imageCount; i++)
 	{
 		std::vector<VkImageView> att(1);
-		att[0] = context.getImageView(i);
+		att[0] = context.getImageView(vk::ImageIndex(i));
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

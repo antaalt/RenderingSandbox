@@ -16,7 +16,7 @@ struct GUI {
 
 	void newFrame();
 	void draw(const Stats &stats);
-	void render(uint32_t imageIndex, vk::Context &context);
+	void render(const vk::ImageIndex &imageIndex, vk::Context &context);
 private:
 	void createRenderPass(const vk::Context &context);
 private:

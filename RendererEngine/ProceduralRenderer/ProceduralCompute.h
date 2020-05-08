@@ -16,11 +16,9 @@ public:
 	void create(const vk::Context &context);
 	void destroy(const vk::Context &context);
 
-	void execute(const vk::CommandBuffer &cmdBuff, const vk::Context &context);
+	void execute(const vk::ImageIndex &imageIndex, const vk::CommandBuffer &cmdBuff, const vk::Context &context);
 
-	void update(const vk::Context &context, const geo::mat4 &view);
-
-	void setOutput(VkImageView imageView) { m_imageView = imageView; }
+	void update(const vk::ImageIndex &imageIndex, const vk::Context &context, const geo::mat4 &view);
 
 	void reset();
 
@@ -53,7 +51,6 @@ private:
 	VkDescriptorSet m_descriptorSet;
 	std::vector<VkDescriptorSetLayoutBinding> m_descriptorBindings;
 
-	VkImageView m_imageView;
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
 };

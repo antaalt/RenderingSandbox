@@ -145,7 +145,7 @@ void ProceduralCompute::destroy(const vk::Context &context)
 	vkDestroyDescriptorSetLayout(context.getLogicalDevice(), m_descriptorSetLayout, nullptr);
 }
 
-void ProceduralCompute::execute(const vk::CommandBuffer &cmdBuff, const vk::Context &context)
+void ProceduralCompute::execute(const vk::ImageIndex &imageIndex, const vk::CommandBuffer &cmdBuff, const vk::Context &context)
 {
 	{
 		using namespace std::chrono;
@@ -162,17 +162,17 @@ void ProceduralCompute::execute(const vk::CommandBuffer &cmdBuff, const vk::Cont
 	vkCmdDispatch(cmdBuff(), context.getWidth() / 16, context.getHeight() / 16, 1);
 }
 
-void ProceduralCompute::update(const vk::Context &context, const geo::mat4 &viewInverse)
+void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Context &context, const geo::mat4 &viewInverse)
 {
 	// --- Descriptor set
 	// Output
 	VkDescriptorImageInfo descriptorInputImageInfo{};
 	descriptorInputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	descriptorInputImageInfo.imageView = m_imageView;
+	descriptorInputImageInfo.imageView = context.getImageView(imageIndex);
 	descriptorInputImageInfo.sampler = nullptr;
 	// Ubo
 	VkDescriptorBufferInfo descriptorCameraInfo{};
-	descriptorCameraInfo.buffer = m_uniformBuffers[0];
+	descriptorCameraInfo.buffer = m_uniformBuffers[imageIndex()]; // TODO set correct uniform. One descriptor per image. One render target per image.
 	descriptorCameraInfo.range = sizeof(UniformBufferObject);
 
 	std::vector<VkWriteDescriptorSet> descriptorWrites(m_descriptorBindings.size());
@@ -191,15 +191,16 @@ void ProceduralCompute::update(const vk::Context &context, const geo::mat4 &view
 
 	// --- UBO
 	float ratio = context.getWidth() / (float)context.getHeight();
+
+	static UniformBufferObject ubo = {};
+	ubo.view = geo::mat4::inverse(viewInverse);
+	ubo.proj = geo::mat4::perspective(90.f, ratio, 0.1f, 1000.f);
+	ubo.viewInverse = viewInverse;
+	ubo.projInverse = geo::mat4::inverse(ubo.proj);
+	ubo.model = geo::mat4::identity();
+
 	for (size_t iUbo = 0; iUbo < m_uniformBuffers.size(); iUbo++)
 	{
-		static UniformBufferObject ubo = {};
-		ubo.view = geo::mat4::inverse(viewInverse);
-		ubo.proj = geo::mat4::perspective(90.f, ratio, 0.1f, 1000.f);
-		ubo.viewInverse = viewInverse;
-		ubo.projInverse = geo::mat4::inverse(ubo.proj);
-		ubo.model = geo::mat4::identity();
-		
 		void* data;
 		VK_CHECK_RESULT(vkMapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[iUbo], 0, sizeof(UniformBufferObject), 0, &data));
 		memcpy(data, &ubo, sizeof(UniformBufferObject));

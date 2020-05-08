@@ -150,8 +150,32 @@ private:
 	Queue m_presentQueue;
 };
 
+struct ImageIndex {
+	ImageIndex() : ImageIndex(0) {}
+	explicit ImageIndex(uint32_t index) : m_index(index) {}
+	uint32_t operator()() const { return m_index; }
+private:
+	friend struct SwapChain;
+	uint32_t *get() { return &m_index; }
+	const uint32_t *get() const { return &m_index; }
+private:
+	uint32_t m_index;
+};
+
+struct FrameIndex {
+	FrameIndex() : FrameIndex(0) {}
+	explicit FrameIndex(uint32_t index) : m_index(index) {}
+	uint32_t operator()() const { return m_index; }
+private:
+	friend struct SwapChain;
+	void next() { m_index = (m_index + 1) % maxInFlight(); }
+	static constexpr uint32_t maxInFlight() { return 1; }
+private:
+	uint32_t m_index;
+};
+
 struct SwapChainFrame {
-	uint32_t imageIndex;
+	ImageIndex imageIndex;
 	VkSemaphore imageAvailableSemaphore;
 	VkSemaphore renderFinishedSemaphore;
 	VkFence inFlightFence;
@@ -160,23 +184,26 @@ struct SwapChainFrame {
 };
 
 struct SwapChain {
+	SwapChain();
 	void create(const vk::PhysicalDevice &physicalDevice, const vk::Device &device, const vk::Surface &surface);
 	void destroy(const vk::Device &device);
 
 	VkSwapchainKHR operator()() const { return m_swapChain; }
 
-	VkImageView getImageView(uint32_t imageIndex) const { return m_views[imageIndex]; }
+	VkImageView getImageView(ImageIndex imageIndex) const { return m_views[imageIndex()]; }
 	uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
 
 	bool acquireNextFrame(const vk::Device &device, SwapChainFrame *frame);
 	bool presentFrame(const vk::Device &device, const SwapChainFrame &frame);
 private:
+	VkImage &getImage(ImageIndex index) { return m_images[index()]; }
+	SwapChainFrame &getFrame(FrameIndex index) { return m_frames[index()]; }
+private:
 	VkSwapchainKHR m_swapChain;
-	uint32_t m_currentFrameIndex;
+	FrameIndex m_currentFrameIndex;
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_views;
-	static const uint32_t maxFramesInFlight = 2;
-	std::array<SwapChainFrame, maxFramesInFlight> m_frames;
+	std::array<SwapChainFrame, FrameIndex::maxInFlight()> m_frames;
 };
 
 struct Context {
@@ -198,7 +225,7 @@ struct Context {
 	void endSingleTimeCommand(VkCommandBuffer commandBuffer) const;
 
 	// Swap chain
-	VkImageView getImageView(uint32_t imageIndex) const { return m_swapChain.getImageView(imageIndex); }
+	VkImageView getImageView(ImageIndex imageIndex) const { return m_swapChain.getImageView(imageIndex); }
 	uint32_t getImageCount() const { return m_swapChain.getImageCount(); }
 	VkFormat getFormat() const { return m_surface.getFormat(m_physicalDevice).format; }
 	bool acquireNextFrame(vk::SwapChainFrame *frame);
@@ -225,10 +252,10 @@ struct CommandBuffer {
 	void begin();
 	void end();
 
-	void set(VkCommandBuffer cmdBuff, uint32_t imageIndex) { m_imageIndex = imageIndex; m_commandBuffer = cmdBuff; }
+	void set(VkCommandBuffer cmdBuff, ImageIndex imageIndex) { m_imageIndex = imageIndex; m_commandBuffer = cmdBuff; }
 
 private:
-	uint32_t m_imageIndex;
+	ImageIndex m_imageIndex;
 	VkCommandBuffer m_commandBuffer;
 };
 

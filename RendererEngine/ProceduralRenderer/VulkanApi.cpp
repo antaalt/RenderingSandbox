@@ -473,6 +473,11 @@ void Device::destroy()
 	vkDestroyDevice(m_device, nullptr);
 }
 
+SwapChain::SwapChain() :
+	m_currentFrameIndex(0)
+{
+}
+
 void SwapChain::create(const vk::PhysicalDevice &physicalDevice, const vk::Device &device, const vk::Surface &surface)
 {
 	VkSurfaceCapabilitiesKHR capabilities;
@@ -557,7 +562,7 @@ void SwapChain::create(const vk::PhysicalDevice &physicalDevice, const vk::Devic
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (size_t i = 0; i < maxFramesInFlight; i++) {
+	for (size_t i = 0; i < FrameIndex::maxInFlight(); i++) {
 		VK_CHECK_RESULT(vkCreateSemaphore(device(), &semaphoreInfo, nullptr, &m_frames[i].imageAvailableSemaphore));
 		VK_CHECK_RESULT(vkCreateSemaphore(device(), &semaphoreInfo, nullptr, &m_frames[i].renderFinishedSemaphore));
 		VK_CHECK_RESULT(vkCreateFence(device(), &fenceInfo, nullptr, &m_frames[i].inFlightFence));
@@ -572,7 +577,7 @@ void SwapChain::destroy(const vk::Device &device)
 bool SwapChain::acquireNextFrame(const vk::Device &device, SwapChainFrame *frame)
 {
 	// Get the next image index.
-	*frame = m_frames[m_currentFrameIndex];
+	*frame = getFrame(m_currentFrameIndex);
 	frame->wait(device());
 
 	VkResult result = vkAcquireNextImageKHR(
@@ -581,13 +586,12 @@ bool SwapChain::acquireNextFrame(const vk::Device &device, SwapChainFrame *frame
 		(std::numeric_limits<uint64_t>::max)(),
 		frame->imageAvailableSemaphore,
 		VK_NULL_HANDLE,
-		&m_currentFrameIndex
+		frame->imageIndex.get()
 	);
 	if (result != VK_SUCCESS)
 		throw std::runtime_error("failed to acquire swapchain image");
 	bool needRecreation = (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR);
 
-	frame->imageIndex = m_currentFrameIndex;
 	// TODO check image finished rendering ?
 	// If less image than frames in flight, might be necessary
 	return needRecreation;
@@ -604,7 +608,7 @@ bool SwapChain::presentFrame(const vk::Device &device, const SwapChainFrame & fr
 	presentInfo.pWaitSemaphores = signalSemaphores;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &frame.imageIndex;
+	presentInfo.pImageIndices = frame.imageIndex.get();
 	presentInfo.pResults = nullptr; // Optional
 
 	VkResult result = vkQueuePresentKHR(device.getPresentQueue().queue, &presentInfo);
@@ -619,7 +623,7 @@ bool SwapChain::presentFrame(const vk::Device &device, const SwapChainFrame & fr
 		throw std::runtime_error("failed to present swap chain image!");
 		VK_CHECK_RESULT(vkQueueWaitIdle(device.getPresentQueue().queue));
 	}
-	m_currentFrameIndex = (m_currentFrameIndex + 1) % maxFramesInFlight;
+	m_currentFrameIndex.next();
 	return false;
 }
 
