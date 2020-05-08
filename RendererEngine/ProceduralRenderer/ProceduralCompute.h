@@ -24,6 +24,8 @@ public:
 
 	uint32_t getSampleCount() const { return m_samples; }
 
+	VkImage getImage() { return m_image; }
+
 private:
 	struct alignas(16) PushConstant
 	{
@@ -53,6 +55,10 @@ private:
 
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+
+	VkImage m_image;
+	VkImageView m_imageView;
+	VkDeviceMemory m_imageMemory;
 };
 
 }

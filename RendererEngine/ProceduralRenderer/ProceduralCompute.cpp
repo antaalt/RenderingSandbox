@@ -130,6 +130,50 @@ void ProceduralCompute::create(const vk::Context & context)
 		VK_CHECK_RESULT(vkBindBufferMemory(context.getLogicalDevice(), m_uniformBuffers[i], m_uniformBuffersMemory[i], 0));
 
 	}
+
+	// Image
+	VkImageCreateInfo imageInfo = {};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = context.getWidth();
+	imageInfo.extent.height = context.getHeight();
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = context.getFormat();
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VK_CHECK_RESULT(vkCreateImage(context.getLogicalDevice(), &imageInfo, nullptr, &m_image));
+
+	VkMemoryRequirements imageMemRequirements;
+	vkGetImageMemoryRequirements(context.getLogicalDevice(), m_image, &imageMemRequirements);
+
+	VkMemoryAllocateInfo imageAllocInfo = {};
+	imageAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	imageAllocInfo.allocationSize = imageMemRequirements.size;
+	imageAllocInfo.memoryTypeIndex = findMemoryType(context.getPhysicalDevice(), imageMemRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	VK_CHECK_RESULT(vkAllocateMemory(context.getLogicalDevice(), &imageAllocInfo, nullptr, &m_imageMemory));
+
+	VK_CHECK_RESULT(vkBindImageMemory(context.getLogicalDevice(), m_image, m_imageMemory, 0));
+
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = m_image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = context.getFormat();
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView;
+	VK_CHECK_RESULT(vkCreateImageView(context.getLogicalDevice(), &viewInfo, nullptr, &m_imageView));
 }
 
 void ProceduralCompute::destroy(const vk::Context &context)
@@ -168,7 +212,7 @@ void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Conte
 	// Output
 	VkDescriptorImageInfo descriptorInputImageInfo{};
 	descriptorInputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	descriptorInputImageInfo.imageView = context.getImageView(imageIndex);
+	descriptorInputImageInfo.imageView = m_imageView;
 	descriptorInputImageInfo.sampler = nullptr;
 	// Ubo
 	VkDescriptorBufferInfo descriptorCameraInfo{};

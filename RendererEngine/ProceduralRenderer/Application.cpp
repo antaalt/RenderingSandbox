@@ -165,8 +165,73 @@ void Application::execute()
 		vk::CommandBuffer &cmdBuff = m_commandBuffers[frame.imageIndex()];
 		cmdBuff.begin();
 		m_compute.execute(frame.imageIndex, cmdBuff, m_context);
-		cmdBuff.end();
 
+		VkImageMemoryBarrier imageMemoryBarrier[2]{};
+		// barrier render target
+		imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageMemoryBarrier[0].image = m_compute.getImage();
+		imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		// barrier swapchain
+		imageMemoryBarrier[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[1].srcAccessMask = 0;
+		imageMemoryBarrier[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageMemoryBarrier[1].oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		imageMemoryBarrier[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageMemoryBarrier[1].image = m_context.getImage(frame.imageIndex);
+		imageMemoryBarrier[1].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		vkCmdPipelineBarrier(
+			cmdBuff(),
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			2, imageMemoryBarrier
+		);
+
+		VkImageCopy copyRegion{};
+		VkImageSubresourceLayers subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+		copyRegion.extent = VkExtent3D{m_context.getWidth(), m_context.getHeight(), 1 };
+		copyRegion.srcSubresource = subResource;
+		copyRegion.dstSubresource = subResource;
+		vkCmdCopyImage(
+			cmdBuff(),
+			m_compute.getImage(),
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			m_context.getImage(frame.imageIndex),
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1, &copyRegion
+		);
+
+		// barrier swapchain
+		imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+		imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		imageMemoryBarrier[0].image = m_compute.getImage();
+		imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		vkCmdPipelineBarrier(
+			cmdBuff(),
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, imageMemoryBarrier
+		);
+		
+		cmdBuff.end();
 		submit(m_context.getLogicalDevice(), m_context.getGraphicQueue(), frame, cmdBuff);
 
 		m_gui.render(frame.imageIndex, m_context);

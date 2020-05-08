@@ -190,6 +190,7 @@ struct SwapChain {
 
 	VkSwapchainKHR operator()() const { return m_swapChain; }
 
+	VkImage getImage(ImageIndex imageIndex) const { return m_images[imageIndex()]; }
 	VkImageView getImageView(ImageIndex imageIndex) const { return m_views[imageIndex()]; }
 	uint32_t getImageCount() const { return static_cast<uint32_t>(m_images.size()); }
 
@@ -225,6 +226,7 @@ struct Context {
 	void endSingleTimeCommand(VkCommandBuffer commandBuffer) const;
 
 	// Swap chain
+	VkImage getImage(ImageIndex imageIndex) const { return m_swapChain.getImage(imageIndex); }
 	VkImageView getImageView(ImageIndex imageIndex) const { return m_swapChain.getImageView(imageIndex); }
 	uint32_t getImageCount() const { return m_swapChain.getImageCount(); }
 	VkFormat getFormat() const { return m_surface.getFormat(m_physicalDevice).format; }
