@@ -172,7 +172,6 @@ void ProceduralCompute::create(const vk::Context & context)
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	VkImageView imageView;
 	VK_CHECK_RESULT(vkCreateImageView(context.getLogicalDevice(), &viewInfo, nullptr, &m_imageView));
 }
 
@@ -206,7 +205,7 @@ void ProceduralCompute::execute(const vk::ImageIndex &imageIndex, const vk::Comm
 	vkCmdDispatch(cmdBuff(), context.getWidth() / 16, context.getHeight() / 16, 1);
 }
 
-void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Context &context, const geo::mat4 &viewInverse)
+void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Context &context, const Scene &scene)
 {
 	// --- Descriptor set
 	// Output
@@ -235,11 +234,10 @@ void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Conte
 
 	// --- UBO
 	float ratio = context.getWidth() / (float)context.getHeight();
-
 	static UniformBufferObject ubo = {};
-	ubo.view = geo::mat4::inverse(viewInverse);
-	ubo.proj = geo::mat4::perspective(90.f, ratio, 0.1f, 1000.f);
-	ubo.viewInverse = viewInverse;
+	ubo.view = geo::mat4::inverse(scene.camera.transform);
+	ubo.proj = geo::mat4::perspective(scene.camera.hFov, ratio, scene.camera.zNear, scene.camera.zFar);
+	ubo.viewInverse = scene.camera.transform;
 	ubo.projInverse = geo::mat4::inverse(ubo.proj);
 	ubo.model = geo::mat4::identity();
 

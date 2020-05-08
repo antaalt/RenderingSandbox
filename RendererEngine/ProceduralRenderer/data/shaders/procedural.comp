@@ -41,6 +41,9 @@ const float pi = 3.14159;
 // https://www.iquilezles.org/www/articles/terrainmarching/terrainmarching.htm
 // https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
 // https://computergraphics.stackexchange.com/questions/161/what-is-ray-marching-is-sphere-tracing-the-same-thing
+// https://www.shadertoy.com/view/Xds3zN #for union & scene management
+// https://iquilezles.org/www/articles/rmshadows/rmshadows.htm #shadows
+// http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
 
 Ray generateRayForPixel(uint x, uint y)
 {
@@ -59,8 +62,46 @@ Ray generateRayForPixel(uint x, uint y)
 	return ray;
 }
 
-float height(float x, float z)
+// --- merging SDF
+vec2 intersectSDF(vec2 distA, vec2 distB)
 {
+	return (distA.x > distB.x) ? distA : distB;
+}
+
+float unionSDF(float distA, float distB)
+{
+	return min(distA, distB);
+}
+vec2 unionSDF(vec2 distA, vec2 distB)
+{
+	return (distA.x < distB.x) ? distA : distB;
+}
+
+/*vec2 differenceSDF(vec2 distA, vec2 distB)
+{
+	return (distA.x < -distB.x) ? distA : distB;
+}*/
+
+
+// --- shape SDF
+float planeSDF(vec3 p) {
+	return p.y;
+}
+float sphereSDF(vec3 p, float s) {
+	return length(p) - s;
+}
+float noiseSDF(vec3 p, float freq, float amp) {
+	return noise(vec2(p.x, p.z) / freq) * amp + p.y;
+}
+float boxSDF(vec3 p, vec3 b) {
+	vec3 d = abs(p) - b;
+	return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+}
+
+// --- Custom SDF
+float moutainSDF(vec3 p)
+{
+#if 0
 	// Zero octave 
 	const float freq0 = 10000;
 	const float amp0 = 100.0;
@@ -72,30 +113,52 @@ float height(float x, float z)
 	const float octave1 = noise(vec2(x, z) / freq1) * amp1;
 	
 	// Second octave
-	const float freq2 = 0.5;
+	const float freq2 = 5;
 	const float amp2 = 0.1;
 	const float octave2 = noise(vec2(x, z) / freq2) * amp2;
 	
 	// Third octave
-	const float freq3 = 20;
+	const float freq3 = 10;
 	const float amp3 = 2.0;
 	const float octave3 = noise(vec2(x, z) / freq3) * amp3;
 	
-	return max(octave0 + octave1 + octave2 * octave1 / amp1 + octave3 + 10, 0);
+	return octave0 + octave1 + octave2 + octave3 + 10;
+#else
+	const float octave0 = noiseSDF(p, 10000, 100.0);
+	const float octave1 = noiseSDF(p, 100, 50.0);
+	const float octave2 = noiseSDF(p, 5, 0.1);
+	const float octave3 = noiseSDF(p, 10, 0.2);
+	return octave0 + octave1 + octave2 + octave3;
+#endif
 }
-// Central difference
+
+float waterSDF(vec3 p) 
+{
+	return planeSDF(p);
+}
+
+// --- Scene definition
+vec2 map(vec3 stepPoint) {
+	vec2 res = vec2(1e10, 0.0);
+	res = unionSDF(res, vec2(moutainSDF(stepPoint - vec3(0)), 0));
+	res = unionSDF(res, vec2(waterSDF(stepPoint - vec3(0)), 1));
+	//res = unionSDF(res, vec2(sphereSDF(stepPoint - vec3(0.0, 20.0, 0.0), 5.0), 2));
+	return res;
+}
+
+// --- Central difference
 vec3 getNormal(vec3 p)
 {
 	const float eps = 0.01f;
 	return normalize(
 		vec3(
-			height(p.x - eps, p.z) - height(p.x + eps, p.z),
-			2.0f*eps,
-			height(p.x, p.z - eps) - height(p.x, p.z + eps)
+			map(vec3(p.x - eps, p.y, p.z)).x - map(vec3(p.x + eps, p.y, p.z)).x,
+			2.0 * eps,
+			map(vec3(p.x, p.y, p.z - eps)).x - map(vec3(p.x, p.y, p.z + eps)).x
 		)
 	);
 }
-bool castRay(in Ray ray, out float dist, inout Stat stats)
+bool castRay(in Ray ray, out float dist, out uint materialID, inout Stat stats)
 {
 	const float dt = 1.0f;
 	const float mint = 0.01f;
@@ -106,32 +169,54 @@ bool castRay(in Ray ray, out float dist, inout Stat stats)
 	for(float t = mint; t < maxt;)
 	{
 		const vec3 stepPos = ray.origin + ray.direction * t;
-		const float h = height(stepPos.x, stepPos.z);
-		const float delta = max(h, dt);
+		const vec2 res = map(stepPos);
+		//const float delta = max(sqrt(res.x), dt);
 		stats.stepCount++;
-		if(stepPos.y < h)
+		// We are inside.
+		if (res.x < 0.0)
 		{
 			// interpolate the intersection distance
-			dist = t - ld + ld*(lh-ly)/(stepPos.y-ly-h+lh);
+			dist = t;// t - ld + ld*(lh-ly)/(stepPos.y-ly-h+lh);
+			materialID = uint(res.y);
 			return true;
 		}
-		t += delta;
-		ld = delta;
-		lh = h;
+		t += 0.1f;//delta;
+		//ld = delta;
+		lh = res.x;
 		ly = stepPos.y;
 	}
 	return false;
 }
 
-vec4 terrainColor(in Ray ray, in float t)
+vec4 shade(in Ray ray, in float t, in uint materialID)
 {
 	const vec3 hitPoint = ray.origin + ray.direction * t;
+#if 1
+	vec4 color = vec4(0);
+	switch(materialID) {
+		case 0:
+			color = vec4(1,0,0,1);
+			break;
+		case 1:
+			color = vec4(0,1,0,1);
+			break;
+		case 2:
+			color = vec4(0,0,1,1);
+			break;
+		default:
+			color = vec4(1,1,1,1);
+			break;
+	}
+	const vec3 normal = getNormal(hitPoint);
+	const vec3 lightDir = -ray.direction;
+	return color * dot(normal, lightDir);
+#else
 
 	const vec4 colorWater = vec4(0.17, 0.61, 0.83, 1);
 	const vec4 colorCliff = vec4(0.17, 0.63, 0.31, 1.0);
 	const vec4 colorEdges = vec4(1, 1, 1, 1);
 	
-	float limit = noise(vec2(hitPoint.x, hitPoint.z) / 0.5);
+	const float limit = noise(vec2(hitPoint.x, hitPoint.z) / 0.5);
 	
 	vec4 color;
 	if(hitPoint.y < 0.01)
@@ -156,13 +241,14 @@ vec4 terrainColor(in Ray ray, in float t)
 	const vec3 normal = getNormal(hitPoint);
 	const vec3 lightDir = -ray.direction;
 	return color * dot(normal, lightDir);
+	#endif
 }
 
 vec4 skyColor(in Ray ray)
 {
 	const vec4 upSky = vec4(0.09, 0.51, 1.0, 1);
 	const vec4 downSky = vec4(0.38, 0.75, 1.0, 1);
-	return mix(downSky, upSky, dot(ray.direction, vec3(0, 1, 0)));
+	return mix(downSky, upSky, max(dot(ray.direction, vec3(0, 1, 0)), 0));
 }
 
 void main()
@@ -170,11 +256,12 @@ void main()
 	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
 	Stat stat;
 	stat.stepCount = 0;
-	vec4 outputColor;
+	vec4 outputColor = vec4(0);
 	float t;
-	if(castRay(ray, t, stat)) 
+	uint materialID;
+	if(castRay(ray, t, materialID, stat)) 
 	{
-		outputColor = terrainColor(ray, t);
+		outputColor = shade(ray, t, materialID);
 	}
 	else
 	{
@@ -197,10 +284,11 @@ void main()
 	}
 	else
 	{
+		const vec4 inputColor = imageLoad(outputImage, ivec2(gl_GlobalInvocationID.xy));
 		imageStore(
 			outputImage,
 			ivec2(gl_GlobalInvocationID.xy),
-			mix(imageLoad(outputImage, ivec2(gl_GlobalInvocationID.xy)), outputColor, 1.f / (params.samples + 1.f))
+			mix(inputColor, outputColor, 1.f / (params.samples + 1.f))
 		);
 	}
 #endif

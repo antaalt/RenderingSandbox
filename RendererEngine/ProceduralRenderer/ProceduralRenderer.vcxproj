@@ -128,6 +128,7 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ProceduralCompute.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="VulkanApi.cpp" />
     <ClCompile Include="VulkanExtensions.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -156,6 +157,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="ProceduralCompute.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="VulkanApi.h" />
     <ClInclude Include="VulkanExtensions.h" />
     <ClInclude Include="Window.h" />

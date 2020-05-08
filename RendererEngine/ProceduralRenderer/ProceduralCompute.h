@@ -3,8 +3,7 @@
 #include <array>
 
 #include "VulkanApi.h"
-
-#include "Geometry.h"
+#include "Scene.h"
 
 namespace app {
 
@@ -18,7 +17,7 @@ public:
 
 	void execute(const vk::ImageIndex &imageIndex, const vk::CommandBuffer &cmdBuff, const vk::Context &context);
 
-	void update(const vk::ImageIndex &imageIndex, const vk::Context &context, const geo::mat4 &view);
+	void update(const vk::ImageIndex &imageIndex, const vk::Context &context, const Scene &scene);
 
 	void reset();
 

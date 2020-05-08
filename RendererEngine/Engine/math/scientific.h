@@ -50,23 +50,27 @@ namespace math {
 	struct Radian;
 
 	struct Degree {
-		constexpr Degree() : value(0.f) {}
-		constexpr Degree(math::real_t value) : value(value) {}
-		inline operator Radian();
-		constexpr math::real_t operator()() const { return value; }
+		explicit Degree() : m_value(0.f) {}
+		explicit Degree(math::real_t value) : m_value(value) {}
+		Degree(const Radian &radian);
+		const math::real_t &operator()() const { return m_value; }
+		math::real_t &operator()() { return m_value; }
 	private:
-		const math::real_t value;
+		math::real_t m_value;
 	};
 
 	struct Radian {
-		constexpr Radian() : value(0.f) {}
-		constexpr Radian(math::real_t value) : value(value) {}
-		inline operator Degree() { return Degree(180.f * value / math::pi); }
-		constexpr math::real_t operator()() const { return value; }
+		explicit Radian() : m_value(0.f) {}
+		explicit Radian(math::real_t value) : m_value(value) {}
+		Radian(const Degree &degree) : m_value(degree() / 180.f * math::pi) {}
+		const math::real_t &operator()() const { return m_value; }
+		math::real_t &operator()() { return m_value; }
+		Radian operator/(float value) { Radian rad(m_value); rad /= value; return rad; }
+		Radian &operator/=(float value) { m_value /= value; return *this; }
 	private:
-		const math::real_t value;
+		math::real_t m_value;
 	};
-	inline Degree::operator Radian() { return Radian(math::pi * value / 180.f); }
+	inline Degree::Degree(const Radian &radian) : m_value(radian() / math::pi * 180.f) {}
 
 	// Trigonometric functions
 	inline math::real_t cos(Radian value)

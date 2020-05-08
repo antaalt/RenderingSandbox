@@ -28,8 +28,7 @@ std::vector<char> loadFile(const std::string &str)
 Application::Application() :
 	m_window(),
 	m_context(m_window),
-	m_compute(),
-	m_transform(geo::mat4::translate(geo::vec3(0, 5, 0)))
+	m_compute()
 {
 
 	const uint32_t imageCount = static_cast<uint32_t>(m_context.getImageCount());
@@ -49,6 +48,7 @@ Application::Application() :
 	{
 		m_commandBuffers[iImage].set(commandBuffers[iImage], vk::ImageIndex(iImage));
 	}
+	m_gui.setScene(&m_scene);
 	m_gui.create(m_context, m_window);
 
 
@@ -97,14 +97,14 @@ bool Application::inputs()
 	// ROTATE
 	if (io.MouseDown[0] && !io.WantCaptureMouse)
 	{
-		m_transform = m_transform * geo::mat4::rotate(geo::vec3(0.f, 1.f, 0.f), math::Radian(sensitivity*io.MouseDelta.x));
-		m_transform = m_transform * geo::mat4::rotate(geo::vec3(1.f, 0.f, 0.f), math::Radian(sensitivity*io.MouseDelta.y));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::rotate(geo::vec3(0.f, 1.f, 0.f), math::Radian(sensitivity*io.MouseDelta.x));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::rotate(geo::vec3(1.f, 0.f, 0.f), math::Radian(sensitivity*io.MouseDelta.y));
 		updated = true;
 	}
 	// PAN
 	if (io.MouseDown[1] && !io.WantCaptureMouse)
 	{
-		m_transform = m_transform *geo::mat4::translate(geo::vec3(
+		m_scene.camera.transform = m_scene.camera.transform *geo::mat4::translate(geo::vec3(
 			-io.MouseDelta.x,
 			io.MouseDelta.y,
 			0.f
@@ -120,7 +120,7 @@ bool Application::inputs()
 		bool keyRight = io.KeysDown[GLFW_KEY_D];
 		bool keyUp = io.KeysDown[GLFW_KEY_Q];
 		bool keyDown = io.KeysDown[GLFW_KEY_E];
-		m_transform = m_transform * geo::mat4::translate(geo::vec3(
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::translate(geo::vec3(
 			static_cast<float>(keyRight - keyLeft), // left right
 			static_cast<float>(keyUp - keyDown), // up down
 			static_cast<float>(keyForward - keyBackward) // forward backward
@@ -131,7 +131,7 @@ bool Application::inputs()
 	// ZOOM
 	if (io.MouseWheel != 0.0 && !io.WantCaptureMouse)
 	{
-		m_transform = m_transform * geo::mat4::translate(geo::vec3(0.f, 0.f, io.MouseWheel * 100.f));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::translate(geo::vec3(0.f, 0.f, io.MouseWheel * 100.f));
 		updated = true;
 	}
 	if (io.KeysDown[GLFW_KEY_SPACE])
@@ -148,19 +148,20 @@ void Application::execute()
 	m_window.loop([&]() {
 
 		m_gui.newFrame();
-		if (inputs())
+		Stats stats;
+		stats.samples = m_compute.getSampleCount();
+		bool inputUpdate = inputs();
+		bool drawUpdate = m_gui.draw(stats);
+		if (inputUpdate || drawUpdate)
 		{
 			m_compute.reset();
 		}
-		Stats stats;
-		stats.samples = m_compute.getSampleCount();
-		m_gui.draw(stats);
 
 		// Render
 		vk::SwapChainFrame frame;
 		m_context.acquireNextFrame(&frame);
 
-		m_compute.update(frame.imageIndex, m_context, m_transform);
+		m_compute.update(frame.imageIndex, m_context, m_scene);
 
 		vk::CommandBuffer &cmdBuff = m_commandBuffers[frame.imageIndex()];
 		cmdBuff.begin();
@@ -373,16 +374,36 @@ void GUI::newFrame()
 	ImGui::NewFrame();
 }
 
-void GUI::draw(const Stats &stats)
+bool GUI::draw(const Stats &stats)
 {
+	bool updated = false;
 	static bool open = true;
 	if (ImGui::Begin("Stats", &open))
 	{
 		ImGuiIO &io = ImGui::GetIO();
 		ImGui::Text("%.1f FPS", io.Framerate);
 		ImGui::Text("Samples : %u", stats.samples);
+
+		if (ImGui::CollapsingHeader("Scene##header", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			updated |= ImGui::SliderFloat("Fov##scene", &m_scene->camera.hFov(), 20.f, 160.f);
+			updated |= ImGui::SliderFloat("Near##scene", &m_scene->camera.zNear, 0.f, 10.f);
+			updated |= ImGui::SliderFloat("Far##scene", &m_scene->camera.zFar, 10.f, 10000.f);
+
+			ImGui::Text("Transform");
+			updated |= ImGui::InputFloat4("##col0", m_scene->camera.transform.cols[0].data);
+			updated |= ImGui::InputFloat4("##col1", m_scene->camera.transform.cols[1].data);
+			updated |= ImGui::InputFloat4("##col2", m_scene->camera.transform.cols[2].data);
+			updated |= ImGui::InputFloat4("##col3", m_scene->camera.transform.cols[3].data);
+			if (ImGui::Button("Identity"))
+			{
+				m_scene->camera.transform = geo::mat4::identity();
+				updated = true;
+			}
+		}
 	}
 	ImGui::End();
+	return updated;
 }
 
 void GUI::render(const vk::ImageIndex &imageIndex, vk::Context &context)

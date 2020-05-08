@@ -4,8 +4,10 @@
 #include "VulkanApi.h"
 #include "ProceduralCompute.h"
 #include "Geometry.h"
+#include "Scene.h"
 
 namespace app {
+
 struct Stats {
 	uint32_t samples;
 };
@@ -15,10 +17,13 @@ struct GUI {
 	void destroy(const vk::Context &context);
 
 	void newFrame();
-	void draw(const Stats &stats);
+	bool draw(const Stats &stats);
 	void render(const vk::ImageIndex &imageIndex, vk::Context &context);
+	void setScene(Scene *scene) { m_scene = scene; }
 private:
 	void createRenderPass(const vk::Context &context);
+private:
+	Scene *m_scene;
 private:
 	VkRenderPass m_renderPass;
 	std::vector<VkFramebuffer> m_frames;
@@ -43,7 +48,7 @@ private:
 	vk::Context m_context;
 	ProceduralCompute m_compute;
 	std::vector<vk::CommandBuffer> m_commandBuffers;
-	geo::mat4 m_transform;
+	Scene m_scene;
 	GUI m_gui;
 };
 
