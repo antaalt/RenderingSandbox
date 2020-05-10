@@ -134,8 +134,9 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Engine\math\color32.h" />
-    <ClInclude Include="..\Engine\math\colorHDR.h" />
+    <ClInclude Include="..\Engine\math\angle.h" />
+    <ClInclude Include="..\Engine\math\color4.h" />
+    <ClInclude Include="..\Engine\math\geometry.h" />
     <ClInclude Include="..\Engine\math\mat3.h" />
     <ClInclude Include="..\Engine\math\mat4.h" />
     <ClInclude Include="..\Engine\math\norm3.h" />
@@ -146,6 +147,7 @@
     <ClInclude Include="..\Engine\math\uv2.h" />
     <ClInclude Include="..\Engine\math\vec2.h" />
     <ClInclude Include="..\Engine\math\vec3.h" />
+    <ClInclude Include="..\Engine\math\vec4.h" />
     <ClInclude Include="..\libs\imgui\examples\imgui_impl_glfw.h" />
     <ClInclude Include="..\libs\imgui\examples\imgui_impl_vulkan.h" />
     <ClInclude Include="..\libs\imgui\imconfig.h" />
@@ -163,8 +165,8 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Engine\math\color32.inl" />
-    <None Include="..\Engine\math\colorHDR.inl" />
+    <None Include="..\Engine\math\angle.inl" />
+    <None Include="..\Engine\math\color4.inl" />
     <None Include="..\Engine\math\mat3.inl" />
     <None Include="..\Engine\math\mat4.inl" />
     <None Include="..\Engine\math\norm3.inl" />
@@ -173,6 +175,7 @@
     <None Include="..\Engine\math\uv2.inl" />
     <None Include="..\Engine\math\vec2.inl" />
     <None Include="..\Engine\math\vec3.inl" />
+    <None Include="..\Engine\math\vec4.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

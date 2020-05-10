@@ -97,14 +97,14 @@ bool Application::inputs()
 	// ROTATE
 	if (io.MouseDown[0] && !io.WantCaptureMouse)
 	{
-		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::rotate(geo::vec3(0.f, 1.f, 0.f), math::Radian(sensitivity*io.MouseDelta.x));
-		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::rotate(geo::vec3(1.f, 0.f, 0.f), math::Radian(sensitivity*io.MouseDelta.y));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::rotate(geo::vec3f(0.f, 1.f, 0.f), geo::radianf(sensitivity*io.MouseDelta.x));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::rotate(geo::vec3f(1.f, 0.f, 0.f), geo::radianf(sensitivity*io.MouseDelta.y));
 		updated = true;
 	}
 	// PAN
 	if (io.MouseDown[1] && !io.WantCaptureMouse)
 	{
-		m_scene.camera.transform = m_scene.camera.transform *geo::mat4::translate(geo::vec3(
+		m_scene.camera.transform = m_scene.camera.transform *geo::mat4f::translate(geo::vec3f(
 			-io.MouseDelta.x,
 			io.MouseDelta.y,
 			0.f
@@ -120,7 +120,7 @@ bool Application::inputs()
 		bool keyRight = io.KeysDown[GLFW_KEY_D];
 		bool keyUp = io.KeysDown[GLFW_KEY_Q];
 		bool keyDown = io.KeysDown[GLFW_KEY_E];
-		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::translate(geo::vec3(
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::translate(geo::vec3f(
 			static_cast<float>(keyRight - keyLeft), // left right
 			static_cast<float>(keyUp - keyDown), // up down
 			static_cast<float>(keyForward - keyBackward) // forward backward
@@ -131,7 +131,7 @@ bool Application::inputs()
 	// ZOOM
 	if (io.MouseWheel != 0.0 && !io.WantCaptureMouse)
 	{
-		m_scene.camera.transform = m_scene.camera.transform * geo::mat4::translate(geo::vec3(0.f, 0.f, io.MouseWheel * 100.f));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::translate(geo::vec3f(0.f, 0.f, io.MouseWheel * 100.f));
 		updated = true;
 	}
 	if (io.KeysDown[GLFW_KEY_SPACE])
@@ -161,79 +161,82 @@ void Application::execute()
 		vk::SwapChainFrame frame;
 		m_context.acquireNextFrame(&frame);
 
-		m_compute.update(frame.imageIndex, m_context, m_scene);
+		if(!m_gui.isPaused())
+		{
+			m_compute.update(frame.imageIndex, m_context, m_scene);
 
-		vk::CommandBuffer &cmdBuff = m_commandBuffers[frame.imageIndex()];
-		cmdBuff.begin();
-		m_compute.execute(frame.imageIndex, cmdBuff, m_context);
+			vk::CommandBuffer &cmdBuff = m_commandBuffers[frame.imageIndex()];
+			cmdBuff.begin();
+			m_compute.execute(frame.imageIndex, cmdBuff, m_context);
 
-		VkImageMemoryBarrier imageMemoryBarrier[2]{};
-		// barrier render target
-		imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-		imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageMemoryBarrier[0].image = m_compute.getImage();
-		imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		// barrier swapchain
-		imageMemoryBarrier[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[1].srcAccessMask = 0;
-		imageMemoryBarrier[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier[1].oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageMemoryBarrier[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageMemoryBarrier[1].image = m_context.getImage(frame.imageIndex);
-		imageMemoryBarrier[1].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		vkCmdPipelineBarrier(
-			cmdBuff(),
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			2, imageMemoryBarrier
-		);
+			VkImageMemoryBarrier imageMemoryBarrier[2]{};
+			// barrier render target
+			imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imageMemoryBarrier[0].image = m_compute.getImage();
+			imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+			// barrier swapchain
+			imageMemoryBarrier[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[1].srcAccessMask = 0;
+			imageMemoryBarrier[1].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageMemoryBarrier[1].oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			imageMemoryBarrier[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			imageMemoryBarrier[1].image = m_context.getImage(frame.imageIndex);
+			imageMemoryBarrier[1].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+			vkCmdPipelineBarrier(
+				cmdBuff(),
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				2, imageMemoryBarrier
+			);
 
-		VkImageCopy copyRegion{};
-		VkImageSubresourceLayers subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		copyRegion.extent = VkExtent3D{m_context.getWidth(), m_context.getHeight(), 1 };
-		copyRegion.srcSubresource = subResource;
-		copyRegion.dstSubresource = subResource;
-		vkCmdCopyImage(
-			cmdBuff(),
-			m_compute.getImage(),
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			m_context.getImage(frame.imageIndex),
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1, &copyRegion
-		);
+			VkImageCopy copyRegion{};
+			VkImageSubresourceLayers subResource{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+			copyRegion.extent = VkExtent3D{ m_context.getWidth(), m_context.getHeight(), 1 };
+			copyRegion.srcSubresource = subResource;
+			copyRegion.dstSubresource = subResource;
+			vkCmdCopyImage(
+				cmdBuff(),
+				m_compute.getImage(),
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				m_context.getImage(frame.imageIndex),
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &copyRegion
+			);
 
-		// barrier swapchain
-		imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-		imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageMemoryBarrier[0].image = m_compute.getImage();
-		imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		vkCmdPipelineBarrier(
-			cmdBuff(),
-			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, imageMemoryBarrier
-		);
-		
-		cmdBuff.end();
-		submit(m_context.getLogicalDevice(), m_context.getGraphicQueue(), frame, cmdBuff);
+			// barrier swapchain
+			imageMemoryBarrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+			imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			imageMemoryBarrier[0].image = m_compute.getImage();
+			imageMemoryBarrier[0].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+			vkCmdPipelineBarrier(
+				cmdBuff(),
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, imageMemoryBarrier
+			);
+
+			cmdBuff.end();
+			submit(m_context.getLogicalDevice(), m_context.getGraphicQueue(), frame, cmdBuff);
+		}
 
 		m_gui.render(frame.imageIndex, m_context);
 
@@ -378,28 +381,46 @@ bool GUI::draw(const Stats &stats)
 {
 	bool updated = false;
 	static bool open = true;
-	if (ImGui::Begin("Stats", &open))
+	if (ImGui::Begin("Info", &open))
 	{
 		ImGuiIO &io = ImGui::GetIO();
 		ImGui::Text("%.1f FPS", io.Framerate);
 		ImGui::Text("Samples : %u", stats.samples);
+		ImGui::Checkbox("Pause rendering", &m_pause);
 
 		if (ImGui::CollapsingHeader("Scene##header", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			ImVec4 color = ImVec4(0.2f, 0.5f, 1.f, 1.f);
+			ImGui::TextColored(color, "Camera");
 			updated |= ImGui::SliderFloat("Fov##scene", &m_scene->camera.hFov(), 20.f, 160.f);
-			updated |= ImGui::SliderFloat("Near##scene", &m_scene->camera.zNear, 0.f, 10.f);
-			updated |= ImGui::SliderFloat("Far##scene", &m_scene->camera.zFar, 10.f, 10000.f);
+			updated |= ImGui::SliderFloat("Near##scene", &m_scene->camera.zNear, std::numeric_limits<float>::min(), m_scene->camera.zFar - std::numeric_limits<float>::epsilon());
+			updated |= ImGui::SliderFloat("Far##scene", &m_scene->camera.zFar, m_scene->camera.zNear + std::numeric_limits<float>::epsilon(), 10000.f);
+			updated |= ImGui::SliderFloat("dt##scene", &m_scene->camera.dt, 0.01f, 10.f);
 
-			ImGui::Text("Transform");
+			ImGui::Text("Transform##scene");
 			updated |= ImGui::InputFloat4("##col0", m_scene->camera.transform.cols[0].data);
 			updated |= ImGui::InputFloat4("##col1", m_scene->camera.transform.cols[1].data);
 			updated |= ImGui::InputFloat4("##col2", m_scene->camera.transform.cols[2].data);
 			updated |= ImGui::InputFloat4("##col3", m_scene->camera.transform.cols[3].data);
-			if (ImGui::Button("Identity"))
+			if (ImGui::Button("Identity##scene"))
 			{
-				m_scene->camera.transform = geo::mat4::identity();
+				m_scene->camera.transform = geo::mat4f::identity();
 				updated = true;
 			}
+			ImGui::Separator();
+			ImGui::TextColored(color, "Sun");
+			static float tod = 12.f;
+			if (ImGui::SliderFloat("TOD##scene", &tod, 0.f, 24.f))
+			{
+				m_scene->sun.direction = geo::vec3f::normalize(geo::vec3f((tod / 24.f * 2.f - 1.f) * 2.f, 1.f, 0.f));
+				updated = true;
+			}
+			if (ImGui::InputFloat3("direction##scene", m_scene->sun.direction.data))
+			{
+				m_scene->sun.direction = geo::vec3f::normalize(m_scene->sun.direction);
+			}
+			ImGui::Separator();
+			ImGui::TextColored(color, "Next");
 		}
 	}
 	ImGui::End();

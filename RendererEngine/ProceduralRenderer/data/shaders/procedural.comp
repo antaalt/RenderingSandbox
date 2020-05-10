@@ -11,6 +11,11 @@ layout(set = 0, binding = 1) uniform CameraProperty {
 	mat4 proj;
 	mat4 viewInverse;
 	mat4 projInverse;
+	mat4 model;
+	vec3 sunDir;
+	float near;
+	float far;
+	float dt;
 } cam;
 
 layout(push_constant) uniform Params {
@@ -62,12 +67,17 @@ Ray generateRayForPixel(uint x, uint y)
 	return ray;
 }
 
-// --- merging SDF
+// --- Merging SDF
+// intersection
+float intersectSDF(float distA, float distB)
+{
+	return max(distA, distB);
+}
 vec2 intersectSDF(vec2 distA, vec2 distB)
 {
 	return (distA.x > distB.x) ? distA : distB;
 }
-
+// union
 float unionSDF(float distA, float distB)
 {
 	return min(distA, distB);
@@ -76,12 +86,15 @@ vec2 unionSDF(vec2 distA, vec2 distB)
 {
 	return (distA.x < distB.x) ? distA : distB;
 }
-
-/*vec2 differenceSDF(vec2 distA, vec2 distB)
+// substraction
+float substractionSDF(float distA, float distB)
 {
-	return (distA.x < -distB.x) ? distA : distB;
-}*/
-
+	return max(-distA, distB);
+}
+vec2 substractionSDF(vec2 distA, vec2 distB)
+{
+	return (-distA.x > distB.x) ? distA : distB;
+}
 
 // --- shape SDF
 float planeSDF(vec3 p) {
@@ -91,45 +104,33 @@ float sphereSDF(vec3 p, float s) {
 	return length(p) - s;
 }
 float noiseSDF(vec3 p, float freq, float amp) {
-	return noise(vec2(p.x, p.z) / freq) * amp + p.y;
+	return noise(vec2(p.x, p.z) / freq) * amp - p.y; // Add p after
 }
 float boxSDF(vec3 p, vec3 b) {
 	vec3 d = abs(p) - b;
 	return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
 }
+float torusSDF( vec3 p, vec2 t ){
+	vec2 q = vec2(length(p.xz)-t.x,p.y);
+	return length(q)-t.y;
+}
+float cappedTorusSDF(in vec3 p, in vec2 sc, in float ra, in float rb){
+	p.x = abs(p.x);
+	float k = (sc.y*p.x>sc.x*p.y) ? dot(p.xy,sc) : length(p.xy);
+	return sqrt( dot(p,p) + ra*ra - 2.0*ra*k ) - rb;
+}
+float infiniteCylinderSDF(vec3 p, vec3 c){
+	return length(p.xz-c.xy)-c.z;
+}
 
 // --- Custom SDF
 float moutainSDF(vec3 p)
 {
-#if 0
-	// Zero octave 
-	const float freq0 = 10000;
-	const float amp0 = 100.0;
-	const float octave0 = noise(vec2(x, z) / freq0) * amp0;
-	
-	// First octave 
-	const float freq1 = 100;
-	const float amp1 = 50.0;
-	const float octave1 = noise(vec2(x, z) / freq1) * amp1;
-	
-	// Second octave
-	const float freq2 = 5;
-	const float amp2 = 0.1;
-	const float octave2 = noise(vec2(x, z) / freq2) * amp2;
-	
-	// Third octave
-	const float freq3 = 10;
-	const float amp3 = 2.0;
-	const float octave3 = noise(vec2(x, z) / freq3) * amp3;
-	
-	return octave0 + octave1 + octave2 + octave3 + 10;
-#else
-	const float octave0 = noiseSDF(p, 10000, 100.0);
+	const float octave0 = noiseSDF(p, 1000, 100.0);
 	const float octave1 = noiseSDF(p, 100, 50.0);
 	const float octave2 = noiseSDF(p, 5, 0.1);
 	const float octave3 = noiseSDF(p, 10, 0.2);
-	return octave0 + octave1 + octave2 + octave3;
-#endif
+	return octave0 + octave1 + octave2 + octave3 - 10 + p.y * 5;
 }
 
 float waterSDF(vec3 p) 
@@ -137,19 +138,26 @@ float waterSDF(vec3 p)
 	return planeSDF(p);
 }
 
+// --- Materials
+const uint MATERIAL_MOUNTAIN = 0;
+const uint MATERIAL_WATER = 1;
+
 // --- Scene definition
 vec2 map(vec3 stepPoint) {
 	vec2 res = vec2(1e10, 0.0);
-	res = unionSDF(res, vec2(moutainSDF(stepPoint - vec3(0)), 0));
-	res = unionSDF(res, vec2(waterSDF(stepPoint - vec3(0)), 1));
+	res = unionSDF(res, vec2(moutainSDF(stepPoint - vec3(0)), MATERIAL_MOUNTAIN));
+	res = unionSDF(res, vec2(waterSDF(stepPoint - vec3(0)), MATERIAL_WATER));
 	//res = unionSDF(res, vec2(sphereSDF(stepPoint - vec3(0.0, 20.0, 0.0), 5.0), 2));
 	return res;
 }
 
-// --- Central difference
+
+// --- Compute normal using derivative technique
 vec3 getNormal(vec3 p)
 {
-	const float eps = 0.01f;
+const float eps = 0.01f;
+#if 0
+	// Central difference
 	return normalize(
 		vec3(
 			map(vec3(p.x - eps, p.y, p.z)).x - map(vec3(p.x + eps, p.y, p.z)).x,
@@ -157,91 +165,93 @@ vec3 getNormal(vec3 p)
 			map(vec3(p.x, p.y, p.z - eps)).x - map(vec3(p.x, p.y, p.z + eps)).x
 		)
 	);
+#else
+	// Tetrahedron 
+	const vec2 k = vec2(1,-1);
+	return normalize(
+		k.xyy*map(p + k.xyy * eps).x + 
+		k.yyx*map(p + k.yyx * eps).x + 
+		k.yxy*map(p + k.yxy * eps).x +
+		k.xxx*map(p + k.xxx * eps).x
+	);
+#endif
 }
+
+
+// --- RayMarching
 bool castRay(in Ray ray, out float dist, out uint materialID, inout Stat stats)
 {
-	const float dt = 1.0f;
-	const float mint = 0.01f;
-	const float maxt = 1000.0f;
 	float lh = 0.0f;
 	float ly = 0.0f;
-	float ld = 0.0f;
-	for(float t = mint; t < maxt;)
+	// TODO check global bounding box & skip raymarching if ray not inside.
+	for(float t = cam.near; t < cam.far; t += cam.dt)
 	{
 		const vec3 stepPos = ray.origin + ray.direction * t;
 		const vec2 res = map(stepPos);
-		//const float delta = max(sqrt(res.x), dt);
 		stats.stepCount++;
 		// We are inside.
 		if (res.x < 0.0)
 		{
 			// interpolate the intersection distance
-			dist = t;// t - ld + ld*(lh-ly)/(stepPos.y-ly-h+lh);
+			dist = t - cam.dt * (-res.x / (lh - res.x));
 			materialID = uint(res.y);
 			return true;
 		}
-		t += 0.1f;//delta;
-		//ld = delta;
 		lh = res.x;
 		ly = stepPos.y;
 	}
 	return false;
 }
 
+#define USE_SOFT_SHADOW
+
+float shadow(in vec3 ro, in vec3 rd)
+{
+	const float w = 1 / 128.f;
+	const float mint = 0.1f; // avoid self intersection
+	const float maxt = 100.f;
+	float s = 1.0;
+	for(float t = mint; t < maxt;)
+	{
+		float h = map(ro + rd*t).x;
+#ifdef USE_SOFT_SHADOW
+		s = min(s, 0.5 + 0.5 * h / (w * t));
+		if (s < 0.1)
+			break;
+#else
+		if (h < 0.1)
+			return 0.f;
+#endif
+		t += h;
+	}
+#ifdef USE_SOFT_SHADOW
+	s = max(s, 0.0);
+	return s*s*(3.0-2.0*s); // smoothstep
+#else
+	return 1.f;
+#endif
+}
+
+// --- Shading
 vec4 shade(in Ray ray, in float t, in uint materialID)
 {
 	const vec3 hitPoint = ray.origin + ray.direction * t;
-#if 1
 	vec4 color = vec4(0);
 	switch(materialID) {
-		case 0:
-			color = vec4(1,0,0,1);
+		case MATERIAL_MOUNTAIN:
+			color = vec4(0.17, 0.63, 0.31, 1.0);
 			break;
-		case 1:
-			color = vec4(0,1,0,1);
-			break;
-		case 2:
-			color = vec4(0,0,1,1);
+		case MATERIAL_WATER:
+			color = vec4(0.17, 0.61, 0.83, 1);
 			break;
 		default:
 			color = vec4(1,1,1,1);
 			break;
 	}
 	const vec3 normal = getNormal(hitPoint);
-	const vec3 lightDir = -ray.direction;
-	return color * dot(normal, lightDir);
-#else
-
-	const vec4 colorWater = vec4(0.17, 0.61, 0.83, 1);
-	const vec4 colorCliff = vec4(0.17, 0.63, 0.31, 1.0);
-	const vec4 colorEdges = vec4(1, 1, 1, 1);
-	
-	const float limit = noise(vec2(hitPoint.x, hitPoint.z) / 0.5);
-	
-	vec4 color;
-	if(hitPoint.y < 0.01)
-	{
-		color = colorWater;
-	}
-#if 0
-	else
-	{
-		color = mix(colorCliff, colorEdges, limit);
-	}
-#else
-	else if(hitPoint.y < limit * 10 + 10) // noisy transition
-	{
-		color = colorCliff;
-	}
-	else 
-	{
-		color = colorEdges;
-	}
-#endif
-	const vec3 normal = getNormal(hitPoint);
-	const vec3 lightDir = -ray.direction;
-	return color * dot(normal, lightDir);
-	#endif
+	const float shadowIntensity = shadow(hitPoint, cam.sunDir);
+	const float cosTheta = max(dot(normal, cam.sunDir), 0.1f);
+	return color * cosTheta * shadowIntensity;
 }
 
 vec4 skyColor(in Ray ray)
@@ -251,6 +261,7 @@ vec4 skyColor(in Ray ray)
 	return mix(downSky, upSky, max(dot(ray.direction, vec3(0, 1, 0)), 0));
 }
 
+// --- Main
 void main()
 {
 	Ray ray = generateRayForPixel(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
@@ -271,7 +282,7 @@ void main()
 	imageStore(
 		outputImage,
 		ivec2(gl_GlobalInvocationID.xy),
-		vec4(stat.stepCount / 1000.0, 0, 0, 1)
+		vec4(stat.stepCount / cam.far, 0, 0, 1)
 	);
 #else
 	if(params.samples == 0)

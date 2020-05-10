@@ -235,11 +235,15 @@ void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Conte
 	// --- UBO
 	float ratio = context.getWidth() / (float)context.getHeight();
 	static UniformBufferObject ubo = {};
-	ubo.view = geo::mat4::inverse(scene.camera.transform);
-	ubo.proj = geo::mat4::perspective(scene.camera.hFov, ratio, scene.camera.zNear, scene.camera.zFar);
+	ubo.view = geo::mat4f::inverse(scene.camera.transform);
+	ubo.proj = geo::mat4f::perspective(scene.camera.hFov, ratio, scene.camera.zNear, scene.camera.zFar);
 	ubo.viewInverse = scene.camera.transform;
-	ubo.projInverse = geo::mat4::inverse(ubo.proj);
-	ubo.model = geo::mat4::identity();
+	ubo.projInverse = geo::mat4f::inverse(ubo.proj);
+	ubo.model = geo::mat4f::identity();
+	ubo.sunDir = scene.sun.direction;
+	ubo.zNear = scene.camera.zNear;
+	ubo.zFar = scene.camera.zFar;
+	ubo.dt = scene.camera.dt;
 
 	for (size_t iUbo = 0; iUbo < m_uniformBuffers.size(); iUbo++)
 	{

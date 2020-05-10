@@ -13,6 +13,7 @@ struct Stats {
 };
 
 struct GUI {
+	GUI() : m_pause(false) {}
 	void create(const vk::Context &context, const app::Window &window);
 	void destroy(const vk::Context &context);
 
@@ -20,11 +21,13 @@ struct GUI {
 	bool draw(const Stats &stats);
 	void render(const vk::ImageIndex &imageIndex, vk::Context &context);
 	void setScene(Scene *scene) { m_scene = scene; }
+	bool isPaused() const { return m_pause; }
 private:
 	void createRenderPass(const vk::Context &context);
 private:
 	Scene *m_scene;
 private:
+	bool m_pause;
 	VkRenderPass m_renderPass;
 	std::vector<VkFramebuffer> m_frames;
 	VkDescriptorPool m_descriptorPool;

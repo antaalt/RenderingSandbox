@@ -36,11 +36,15 @@ private:
 
 	struct UniformBufferObject
 	{
-		geo::mat4 view;
-		geo::mat4 proj;
-		geo::mat4 viewInverse;
-		geo::mat4 projInverse;
-		geo::mat4 model;
+		alignas(16) geo::mat4f view;
+		alignas(16) geo::mat4f proj;
+		alignas(16) geo::mat4f viewInverse;
+		alignas(16) geo::mat4f projInverse;
+		alignas(16) geo::mat4f model;
+		alignas(16) geo::vec3f sunDir;
+		float zNear;
+		float zFar;
+		float dt;
 	};
 
 	uint32_t m_samples;
