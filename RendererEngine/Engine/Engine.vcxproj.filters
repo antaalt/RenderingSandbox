@@ -25,9 +25,6 @@
     <Filter Include="Header Files\RenderingSession">
       <UniqueIdentifier>{5d9bffb4-8d45-4676-a5d1-cddee06adc21}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Math">
-      <UniqueIdentifier>{dede0334-4f2f-4be4-b0ac-661ce4bd2ecc}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -74,42 +71,6 @@
     <ClInclude Include="RenderPass.h">
       <Filter>Header Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="math\color32.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\colorHDR.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\mat3.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\mat4.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\norm3.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\point3.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\print.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\quat.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\scientific.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\uv2.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\vec2.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="math\vec3.h">
-      <Filter>Math</Filter>
-    </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>Header Files\RenderingSession</Filter>
     </ClInclude>
@@ -128,37 +89,5 @@
     <ClInclude Include="framegraph.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="math\color32.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\colorHDR.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\mat3.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\mat4.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\norm3.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\point3.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\quat.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\uv2.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\vec2.inl">
-      <Filter>Math</Filter>
-    </None>
-    <None Include="math\vec3.inl">
-      <Filter>Math</Filter>
-    </None>
   </ItemGroup>
 </Project>

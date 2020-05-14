@@ -33,18 +33,6 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="framegraph.hpp" />
-    <ClInclude Include="math\color32.h" />
-    <ClInclude Include="math\colorHDR.h" />
-    <ClInclude Include="math\mat3.h" />
-    <ClInclude Include="math\mat4.h" />
-    <ClInclude Include="math\norm3.h" />
-    <ClInclude Include="math\point3.h" />
-    <ClInclude Include="math\print.h" />
-    <ClInclude Include="math\quat.h" />
-    <ClInclude Include="math\scientific.h" />
-    <ClInclude Include="math\uv2.h" />
-    <ClInclude Include="math\vec2.h" />
-    <ClInclude Include="math\vec3.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RendererContext.h" />
     <ClInclude Include="RendererMesh.h" />
@@ -53,18 +41,6 @@
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelLoader.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="math\color32.inl" />
-    <None Include="math\colorHDR.inl" />
-    <None Include="math\mat3.inl" />
-    <None Include="math\mat4.inl" />
-    <None Include="math\norm3.inl" />
-    <None Include="math\point3.inl" />
-    <None Include="math\quat.inl" />
-    <None Include="math\uv2.inl" />
-    <None Include="math\vec2.inl" />
-    <None Include="math\vec3.inl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{391EBF8B-01A4-4EFE-BAA3-2C6343A41F4E}</ProjectGuid>

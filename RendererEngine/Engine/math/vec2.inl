@@ -1,6 +1,7 @@
 #include "vec2.h"
 #include "vec3.h"
 #include "vec4.h"
+#include "uv2.h"
 
 
 namespace geometry {
@@ -17,6 +18,11 @@ inline vec2<T>::vec2(T value) : x(value), y(value)
 
 template <typename T>
 inline vec2<T>::vec2(T x, T y) : x(x), y(y)
+{
+}
+
+template<typename T>
+inline vec2<T>::vec2(const uv2<T>& uv) : x(uv.u), y(uv.v)
 {
 }
 

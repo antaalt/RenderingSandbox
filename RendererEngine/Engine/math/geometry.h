@@ -1,5 +1,7 @@
 #pragma once
 
+#include "gpu.h"
+#include "scientific.h"
 #include "angle.h"
 #include "color4.h"
 #include "vec2.h"
@@ -51,6 +53,8 @@ using radianf = radian<float>;
 
 }
 
+#include "gpu.inl"
+#include "scientific.inl"
 #include "angle.inl"
 #include "color4.inl"
 #include "vec2.inl"

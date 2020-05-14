@@ -35,6 +35,12 @@ inline vec3<T>::vec3(const point3<T> &point) :
 {
 }
 
+template<typename T>
+inline vec3<T>::vec3(const col3<T>& col) :
+	x(col.x), y(col.y), z(col.z)
+{
+}
+
 template <typename T>
 inline vec3<T>::vec3(const vec2<T> &vec, T z) : 
 	x(vec.x), y(vec.y), z(z)

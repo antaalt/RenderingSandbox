@@ -8,6 +8,8 @@ struct norm3;
 template <typename T>
 struct point3;
 template <typename T>
+struct col3;
+template <typename T>
 struct vec2;
 template <typename T>
 struct vec4;
@@ -26,6 +28,7 @@ struct vec3 {
 	explicit vec3(T x, T y, T z);
 	explicit vec3(const norm3<T> &normal);
 	explicit vec3(const point3<T> &point);
+	explicit vec3(const col3<T> &col);
 	explicit vec3(const vec2<T> &vec, T z);
 	explicit vec3(const vec4<T> &vec);
 

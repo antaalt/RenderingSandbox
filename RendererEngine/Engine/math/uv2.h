@@ -5,6 +5,9 @@
 namespace geometry {
 
 template <typename T>
+struct vec2;
+
+template <typename T>
 struct uv2 {
 	union {
 		T data[2];
@@ -15,6 +18,7 @@ struct uv2 {
 	uv2();
 	explicit uv2(T value);
 	explicit uv2(T u, T v);
+	explicit uv2(const vec2<T> &vec);
 
 	T &operator[](size_t index);
 	const T &operator[](size_t index) const;

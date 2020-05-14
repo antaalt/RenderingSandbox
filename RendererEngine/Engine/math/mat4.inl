@@ -37,6 +37,12 @@ inline col4<T>::col4(vec3<T> vec, T w) :
 }
 
 template <typename T>
+inline col4<T>::col4(vec4<T> vec) :
+	x(vec.x), y(vec.y), z(vec.z), w(vec.w)
+{
+}
+
+template <typename T>
 inline col4<T>::col4(point3<T> vec, T w) :
 	x(vec.x), y(vec.y), z(vec.z), w(w)
 {

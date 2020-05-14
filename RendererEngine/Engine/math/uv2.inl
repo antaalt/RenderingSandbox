@@ -1,4 +1,5 @@
 #include "uv2.h"
+#include "vec2.h"
 
 namespace geometry {
 
@@ -14,6 +15,11 @@ inline uv2<T>::uv2(T value) : u(value), v(value)
 
 template <typename T>
 inline uv2<T>::uv2(T u, T v) : u(u), v(v)
+{
+}
+
+template<typename T>
+inline uv2<T>::uv2(const vec2<T>& vec) : u(vec.x), v(vec.y)
 {
 }
 

@@ -25,6 +25,7 @@ struct col4 {
 	col4(T x, T y, T z, T w);
 	col4(norm3<T> vec, T w);
 	col4(vec3<T> vec, T w);
+	col4(vec4<T> vec);
 	col4(point3<T> vec, T w);
 
 	T &operator[](size_t index);
