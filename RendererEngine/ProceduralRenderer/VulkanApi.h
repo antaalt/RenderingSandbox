@@ -60,13 +60,37 @@ struct PhysicalDevice;
 struct Device;
 struct SwapChain;
 
+struct InstanceExtensions {
+	void add(const char* extension);
+	void add(const app::Window &window);
+
+	uint32_t size() const { return static_cast<uint32_t>(m_requiredExtensions.size()); }
+	const char *const * data() const { return m_requiredExtensions.data(); }
+private:
+	friend struct Instance;
+	void checkSupport() const;
+private:
+	std::vector<const char*> m_requiredExtensions;
+};
+
+
+struct DeviceExtensions {
+	void add(const char* extension);
+private:
+	friend struct Device;
+	void checkSupport(VkPhysicalDevice physicalDevice) const;
+	uint32_t size() const { return static_cast<uint32_t>(m_requiredExtensions.size()); }
+	const char *const * data() const { return m_requiredExtensions.data(); }
+private:
+	std::vector<const char*> m_requiredExtensions;
+};
+
+
 struct Instance {
 	Instance();
 
-	void create(const std::vector<std::string>& requiredInstanceExtensions);
+	void create(const InstanceExtensions& requiredInstanceExtensions);
 	void destroy();
-
-	std::vector<std::string> getAvailableExtensions();
 
 	VkPhysicalDevice getPhysicalDevice(uint32_t physicalDeviceID);
 
@@ -122,9 +146,9 @@ struct PhysicalDevice {
 	uint32_t getQueueCount() const;
 	Queue::Handle getGraphicQueueHandle() const;
 	Queue::Handle getComputeQueueHandle() const;
-	Queue::Handle getPresentQueueHandle(vk::Surface &surface) const;
+	Queue::Handle getPresentQueueHandle(const vk::Surface &surface) const;
 
-	std::vector<std::string> getAvailableExtensions();
+	//std::vector<std::string> getAvailableExtensions();
 
 	VkPhysicalDevice operator()() const { return m_physicalDevice; }
 private:
@@ -132,7 +156,7 @@ private:
 };
 
 struct Device {
-	void create(vk::PhysicalDevice &physicalDevice, vk::Surface &surface);
+	void create(const vk::PhysicalDevice &physicalDevice, const vk::DeviceExtensions &extensions, const vk::Surface &surface);
 	void destroy();
 
 	const Queue &getGraphicQueue() const { return m_graphicQueue; }

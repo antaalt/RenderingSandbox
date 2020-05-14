@@ -113,34 +113,77 @@ const std::vector<const char*> validationLayers = {
 };
 
 namespace vk {
-Instance::Instance() :
-	m_instance(VK_NULL_HANDLE),
-	m_debugMessenger(VK_NULL_HANDLE)
+
+void InstanceExtensions::add(const char * extension)
 {
+	m_requiredExtensions.push_back(extension);
 }
-void Instance::create(const std::vector<std::string>& requiredInstanceExtensions)
+void InstanceExtensions::add(const app::Window &window)
 {
-	std::vector<const char*> requiredInstanceExtensionsChar;
-	for (const std::string &requiredExtension : requiredInstanceExtensions)
-		requiredInstanceExtensionsChar.push_back(requiredExtension.c_str());
-	if(enableValidationLayers)
-		requiredInstanceExtensionsChar.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-	// Check available extensions
-	std::vector<std::string> availableExtensions = getAvailableExtensions();
-	for (const char * requiredExtension : requiredInstanceExtensionsChar)
+	uint32_t glfwInstanceExtensionsCount;
+	const char ** glfwInstanceExtensions = glfwGetRequiredInstanceExtensions(&glfwInstanceExtensionsCount);
+	for (uint32_t i = 0; i < glfwInstanceExtensionsCount; i++)
+		add(glfwInstanceExtensions[i]);
+}
+
+void InstanceExtensions::checkSupport() const
+{
+
+	uint32_t extensionCount = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+	for (const char * extension : m_requiredExtensions)
 	{
 		bool found = false;
-		for (const std::string availableExtension : availableExtensions)
+		for (const VkExtensionProperties& availableExtension : availableExtensions)
 		{
-			if (strcmp(availableExtension.c_str(), requiredExtension) == 0)
+			if (strcmp(extension, availableExtension.extensionName) == 0)
+			{
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+			throw std::runtime_error("Extension not supported : " + std::string(extension));
+	}
+}
+
+void DeviceExtensions::add(const char * extension)
+{
+	m_requiredExtensions.push_back(extension);
+}
+
+void DeviceExtensions::checkSupport(VkPhysicalDevice physicalDevice) const
+{
+	uint32_t extensionCount = 0;
+	VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr));
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data()));
+	for (const char * extension : m_requiredExtensions)
+	{
+		bool found = false;
+		for (const VkExtensionProperties& availableExtension : availableExtensions)
+		{
+			if (strcmp(extension, availableExtension.extensionName) == 0)
 			{
 				found = true;
 				break;
 			}
 		}
 		if (!found)
-			throw std::runtime_error("Could not found required instance extension : " + std::string(requiredExtension));
+			throw std::runtime_error("Extension not supported : " + std::string(extension));
 	}
+}
+
+Instance::Instance() :
+	m_instance(VK_NULL_HANDLE),
+	m_debugMessenger(VK_NULL_HANDLE)
+{
+}
+void Instance::create(const InstanceExtensions& requiredInstanceExtensions)
+{
+	requiredInstanceExtensions.checkSupport();
 
 	// Create instance
 	VkApplicationInfo appInfo = {};
@@ -155,8 +198,8 @@ void Instance::create(const std::vector<std::string>& requiredInstanceExtensions
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
 
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredInstanceExtensionsChar.size());
-	createInfo.ppEnabledExtensionNames = requiredInstanceExtensionsChar.data();
+	createInfo.enabledExtensionCount = requiredInstanceExtensions.size();
+	createInfo.ppEnabledExtensionNames = requiredInstanceExtensions.data();
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if (enableValidationLayers)
@@ -185,19 +228,6 @@ void Instance::destroy()
 	if (enableValidationLayers)
 		vkDestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 	vkDestroyInstance(m_instance, nullptr);
-}
-std::vector<std::string> Instance::getAvailableExtensions()
-{
-	uint32_t extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-	std::vector<VkExtensionProperties> extensions(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-	std::vector<std::string> availableExtensions;
-	for (const VkExtensionProperties& extension : extensions)
-	{
-		availableExtensions.push_back(extension.extensionName);
-	}
-	return availableExtensions;
 }
 VkPhysicalDevice Instance::getPhysicalDevice(uint32_t physicalDeviceID)
 {
@@ -357,7 +387,7 @@ Queue::Handle PhysicalDevice::getComputeQueueHandle() const
 	return Queue::Handle::invalid();
 }
 
-Queue::Handle PhysicalDevice::getPresentQueueHandle(vk::Surface &surface) const
+Queue::Handle PhysicalDevice::getPresentQueueHandle(const vk::Surface &surface) const
 {
 	uint32_t queueFamilyCount = getQueueCount();
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
@@ -373,19 +403,7 @@ Queue::Handle PhysicalDevice::getPresentQueueHandle(vk::Surface &surface) const
 	return Queue::Handle::invalid();
 }
 
-std::vector<std::string> PhysicalDevice::getAvailableExtensions()
-{
-	uint32_t extensionCount = 0;
-	VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &extensionCount, nullptr));
-	std::vector<VkExtensionProperties> extensions(extensionCount);
-	VK_CHECK_RESULT(vkEnumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &extensionCount, extensions.data()));
-	std::vector<std::string> availableDeviceExtensions;
-	for (const VkExtensionProperties& extension : extensions)
-		availableDeviceExtensions.push_back(extension.extensionName);
-	return availableDeviceExtensions;
-}
-
-void Device::create(vk::PhysicalDevice & physicalDevice, vk::Surface & surface)
+void Device::create(const vk::PhysicalDevice & physicalDevice, const vk::DeviceExtensions &requiredExtensions, const vk::Surface & surface)
 {
 	m_graphicQueue.handle = physicalDevice.getGraphicQueueHandle();
 	m_computeQueue.handle = physicalDevice.getComputeQueueHandle();
@@ -394,26 +412,7 @@ void Device::create(vk::PhysicalDevice & physicalDevice, vk::Surface & surface)
 	ASSERT(m_computeQueue.handle.valid(), "Compute queue invalid");
 	ASSERT(m_presentQueue.handle.valid(), "Present queue invalid");
 
-	std::vector<std::string> availableDeviceExtensions = physicalDevice.getAvailableExtensions();
-	std::vector<const char*> requiredDeviceExtensions;
-	requiredDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-	requiredDeviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
-	requiredDeviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
-
-	for (const char * requiredDeviceExtension : requiredDeviceExtensions)
-	{
-		bool foundExtension = false;
-		for (const std::string & availableDeviceExtension : availableDeviceExtensions)
-		{
-			if (strcmp(requiredDeviceExtension, availableDeviceExtension.c_str()) == 0)
-			{
-				foundExtension = true;
-				break;
-			}
-		}
-		if (!foundExtension)
-			throw std::runtime_error("Required device extensions not found : " + std::string(requiredDeviceExtension));
-	}
+	requiredExtensions.checkSupport(physicalDevice());
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies;
@@ -441,8 +440,8 @@ void Device::create(vk::PhysicalDevice & physicalDevice, vk::Surface & surface)
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
+	createInfo.enabledExtensionCount = requiredExtensions.size();
+	createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
 	if (enableValidationLayers)
 	{
@@ -629,11 +628,19 @@ bool SwapChain::presentFrame(const vk::Device &device, const SwapChainFrame & fr
 
 Context::Context(const app::Window &window)
 {
-	std::vector<std::string> requiredInstanceExtensions = window.getRequiredInstanceExtensions();
-	m_instance.create(requiredInstanceExtensions);
+	vk::InstanceExtensions instanceExtensions;
+	instanceExtensions.add(window);
+	instanceExtensions.add(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+	vk::DeviceExtensions deviceExtensions;
+	deviceExtensions.add(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	//deviceExtensions.add(VK_NV_RAY_TRACING_EXTENSION_NAME);
+	//deviceExtensions.add(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+
+	m_instance.create(instanceExtensions);
 	m_surface.create(m_instance, window);
 	m_physicalDevice.create(m_instance);
-	m_device.create(m_physicalDevice, m_surface);
+	m_device.create(m_physicalDevice, deviceExtensions, m_surface);
 	m_swapChain.create(m_physicalDevice, m_device, m_surface);
 }
 

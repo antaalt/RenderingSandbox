@@ -49,11 +49,4 @@ void Window::loop(std::function<void()> &&loop)
 
 }
 
-std::vector<std::string> Window::getRequiredInstanceExtensions() const
-{
-	uint32_t glfwInstanceExtensionsCount;
-	const char ** glfwInstanceExtensions = glfwGetRequiredInstanceExtensions(&glfwInstanceExtensionsCount);
-	return std::vector<std::string>(glfwInstanceExtensions, glfwInstanceExtensions + glfwInstanceExtensionsCount);
-}
-
 }

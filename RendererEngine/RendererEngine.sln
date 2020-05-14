@@ -21,6 +21,42 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Front", "Front", "{5A00D1EA
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProceduralRenderer", "ProceduralRenderer\ProceduralRenderer.vcxproj", "{A96C1FB3-93DA-45CA-A206-97935442F6C7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Math", "Math", "{E91F7115-E7EA-4E42-AB0D-378264919D79}"
+	ProjectSection(SolutionItems) = preProject
+		Engine\math\angle.h = Engine\math\angle.h
+		Engine\math\angle.inl = Engine\math\angle.inl
+		Engine\math\color4.h = Engine\math\color4.h
+		Engine\math\color4.inl = Engine\math\color4.inl
+		Engine\math\geometry.h = Engine\math\geometry.h
+		Engine\math\gpu.h = Engine\math\gpu.h
+		Engine\math\gpu.inl = Engine\math\gpu.inl
+		Engine\math\half.h = Engine\math\half.h
+		Engine\math\half.inl = Engine\math\half.inl
+		Engine\math\mat3.h = Engine\math\mat3.h
+		Engine\math\mat3.inl = Engine\math\mat3.inl
+		Engine\math\mat4.h = Engine\math\mat4.h
+		Engine\math\mat4.inl = Engine\math\mat4.inl
+		Engine\math\norm3.h = Engine\math\norm3.h
+		Engine\math\norm3.inl = Engine\math\norm3.inl
+		Engine\math\point3.h = Engine\math\point3.h
+		Engine\math\point3.inl = Engine\math\point3.inl
+		Engine\math\print.h = Engine\math\print.h
+		Engine\math\quat.h = Engine\math\quat.h
+		Engine\math\quat.inl = Engine\math\quat.inl
+		Engine\math\sampling.h = Engine\math\sampling.h
+		Engine\math\sampling.inl = Engine\math\sampling.inl
+		Engine\math\scientific.h = Engine\math\scientific.h
+		Engine\math\scientific.inl = Engine\math\scientific.inl
+		Engine\math\uv2.h = Engine\math\uv2.h
+		Engine\math\uv2.inl = Engine\math\uv2.inl
+		Engine\math\vec2.h = Engine\math\vec2.h
+		Engine\math\vec2.inl = Engine\math\vec2.inl
+		Engine\math\vec3.h = Engine\math\vec3.h
+		Engine\math\vec3.inl = Engine\math\vec3.inl
+		Engine\math\vec4.h = Engine\math\vec4.h
+		Engine\math\vec4.inl = Engine\math\vec4.inl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -106,5 +142,6 @@ Global
 		{391EBF8B-01A4-4EFE-BAA3-2C6343A41F4E} = {CC3B5128-8BAA-42AA-8368-6EDEF2911AD6}
 		{53A0FCF5-254C-49B8-BDF2-D4CE45165040} = {5A00D1EA-BFB1-4644-A872-90618BA42B15}
 		{A96C1FB3-93DA-45CA-A206-97935442F6C7} = {5A00D1EA-BFB1-4644-A872-90618BA42B15}
+		{E91F7115-E7EA-4E42-AB0D-378264919D79} = {CC3B5128-8BAA-42AA-8368-6EDEF2911AD6}
 	EndGlobalSection
 EndGlobal

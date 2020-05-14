@@ -17,8 +17,6 @@ public:
 	void loop(std::function<void()> &&loop);
 
 	Handle *getHandle() const { return m_window; }
-
-	std::vector<std::string> getRequiredInstanceExtensions() const;
 private:
 	GLFWwindow *m_window;
 	VkSurfaceKHR m_surface;
