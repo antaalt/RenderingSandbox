@@ -17,9 +17,11 @@ public:
 
 	void execute(const vk::ImageIndex &imageIndex, const vk::CommandBuffer &cmdBuff, const vk::Context &context);
 
-	void update(const vk::ImageIndex &imageIndex, const vk::Context &context, const Scene &scene);
+	// Reset the stage, set descriptor set. This must wait for all frames to end.
+	void reset(const vk::Context &context, const Scene &scene);
 
-	void reset();
+	// Update the stage for the given image.
+	void update(const vk::ImageIndex &imageIndex, const vk::Context &context, const Scene &scene);
 
 	uint32_t getSampleCount() const { return m_samples; }
 
@@ -53,8 +55,9 @@ private:
 	VkPipelineLayout m_layout;
 	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkDescriptorPool m_descriptorPool;
-	VkDescriptorSet m_descriptorSet;
 	std::vector<VkDescriptorSetLayoutBinding> m_descriptorBindings;
+
+	std::vector<VkDescriptorSet> m_descriptorSet;
 
 	std::vector<VkBuffer> m_uniformBuffers;
 	std::vector<VkDeviceMemory> m_uniformBuffersMemory;

@@ -23,6 +23,7 @@
 			__FILE__,						\
 			__LINE__						\
 		);									\
+		std::cerr << buffer << std::endl;   \
 		throw std::runtime_error(buffer);	\
 	}										\
 }
@@ -178,6 +179,7 @@ struct ImageIndex {
 	ImageIndex() : ImageIndex(0) {}
 	explicit ImageIndex(uint32_t index) : m_index(index) {}
 	uint32_t operator()() const { return m_index; }
+	bool operator==(const ImageIndex &imageIndex) const { return m_index == imageIndex.m_index; }
 private:
 	friend struct SwapChain;
 	uint32_t *get() { return &m_index; }
@@ -193,7 +195,7 @@ struct FrameIndex {
 private:
 	friend struct SwapChain;
 	void next() { m_index = (m_index + 1) % maxInFlight(); }
-	static constexpr uint32_t maxInFlight() { return 1; }
+	static constexpr uint32_t maxInFlight() { return 2; }
 private:
 	uint32_t m_index;
 };
@@ -274,6 +276,8 @@ private:
 
 struct CommandBuffer {
 	VkCommandBuffer operator()() const { return m_commandBuffer; }
+
+	ImageIndex getImageIndex() const { return m_imageIndex; }
 
 	void begin();
 	void end();

@@ -213,15 +213,15 @@ void Instance::create(const InstanceExtensions& requiredInstanceExtensions)
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
+		VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(m_instance, &debugCreateInfo, nullptr, &m_debugMessenger));
 	}
 	else
 	{
 		createInfo.enabledLayerCount = 0;
 		createInfo.pNext = nullptr;
+		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
 	}
-
-	VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
-	VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(m_instance, &debugCreateInfo, nullptr, &m_debugMessenger));
 }
 void Instance::destroy()
 {

@@ -21,7 +21,9 @@ uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
 
 void ProceduralCompute::create(const vk::Context & context)
 {
-	// Descriptor set layout
+	const uint32_t imageCount = context.getImageCount();
+
+	// --- Descriptor set layout
 	m_descriptorBindings.resize(2);
 
 	m_descriptorBindings[0].binding = 0;
@@ -36,6 +38,7 @@ void ProceduralCompute::create(const vk::Context & context)
 	m_descriptorBindings[1].pImmutableSamplers = nullptr;
 	m_descriptorBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
+
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(m_descriptorBindings.size());
@@ -43,7 +46,7 @@ void ProceduralCompute::create(const vk::Context & context)
 
 	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(context.getLogicalDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout));
 
-	// Descriptor pool
+	// --- Descriptor pool
 	std::vector<VkDescriptorPoolSize> poolSizes(m_descriptorBindings.size(), {});
 	for (size_t i = 0; i < poolSizes.size(); i++)
 	{
@@ -55,20 +58,22 @@ void ProceduralCompute::create(const vk::Context & context)
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = 1;
+	poolInfo.maxSets = imageCount;
 
 	VK_CHECK_RESULT(vkCreateDescriptorPool(context.getLogicalDevice(), &poolInfo, nullptr, &m_descriptorPool));
 
-	// Descriptor set
+	// --- Descriptor set
+	std::vector<VkDescriptorSetLayout> layouts(imageCount, m_descriptorSetLayout);
+	m_descriptorSet.resize(imageCount);
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = m_descriptorPool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &m_descriptorSetLayout;
+	allocInfo.descriptorSetCount = imageCount;
+	allocInfo.pSetLayouts = layouts.data();
 
-	VK_CHECK_RESULT(vkAllocateDescriptorSets(context.getLogicalDevice(), &allocInfo, &m_descriptorSet));
+	VK_CHECK_RESULT(vkAllocateDescriptorSets(context.getLogicalDevice(), &allocInfo, m_descriptorSet.data()));
 
-	// Pipeline
+	// --- Pipeline
 	VkShaderModule shaderModule = context.getShader("procedural.comp");
 
 	VkPipelineShaderStageCreateInfo shaderStageInfo{};
@@ -102,8 +107,7 @@ void ProceduralCompute::create(const vk::Context & context)
 
 	VK_CHECK_RESULT(vkCreateComputePipelines(context.getLogicalDevice(), VK_NULL_HANDLE, 1, &computePipelineInfo, nullptr, &m_pipeline));
 
-	//uniformBuffer
-	uint32_t imageCount = context.getImageCount();
+	// --- Uniform buffers
 	m_uniformBuffers.resize(imageCount);
 	m_uniformBuffersMemory.resize(imageCount);
 
@@ -190,6 +194,7 @@ void ProceduralCompute::destroy(const vk::Context &context)
 
 void ProceduralCompute::execute(const vk::ImageIndex &imageIndex, const vk::CommandBuffer &cmdBuff, const vk::Context &context)
 {
+	ASSERT(imageIndex == cmdBuff.getImageIndex(), "Incorrect image index");
 	{
 		using namespace std::chrono;
 		static time_point<steady_clock> time = steady_clock::now();
@@ -200,38 +205,47 @@ void ProceduralCompute::execute(const vk::ImageIndex &imageIndex, const vk::Comm
 	}
 	vkCmdPushConstants(cmdBuff(), m_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstant), &m_pushc);
 	vkCmdBindPipeline(cmdBuff(), VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
-	vkCmdBindDescriptorSets(cmdBuff(), VK_PIPELINE_BIND_POINT_COMPUTE, m_layout, 0, 1, &m_descriptorSet, 0, 0);
+	vkCmdBindDescriptorSets(cmdBuff(), VK_PIPELINE_BIND_POINT_COMPUTE, m_layout, 0, 1, &m_descriptorSet[imageIndex()], 0, 0);
 
 	vkCmdDispatch(cmdBuff(), context.getWidth() / 16, context.getHeight() / 16, 1);
 }
 
+void ProceduralCompute::reset(const vk::Context & context, const Scene & scene)
+{
+	// Reset variables
+	m_samples = 0;
+
+	// --- Descriptor set
+	for (uint32_t i = 0; i < context.getImageCount(); i++)
+	{
+		// Output
+		VkDescriptorImageInfo descriptorInputImageInfo{};
+		descriptorInputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		descriptorInputImageInfo.imageView = m_imageView;
+		descriptorInputImageInfo.sampler = nullptr;
+		// Ubo
+		VkDescriptorBufferInfo descriptorCameraInfo{};
+		descriptorCameraInfo.buffer = m_uniformBuffers[i];
+		descriptorCameraInfo.range = sizeof(UniformBufferObject);
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites(m_descriptorBindings.size());
+		for (size_t iBinding = 0; iBinding < m_descriptorBindings.size(); iBinding++)
+		{
+			descriptorWrites[iBinding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[iBinding].dstSet = m_descriptorSet[i];
+			descriptorWrites[iBinding].dstBinding = m_descriptorBindings[iBinding].binding;
+			descriptorWrites[iBinding].dstArrayElement = 0;
+			descriptorWrites[iBinding].descriptorType = m_descriptorBindings[iBinding].descriptorType;
+			descriptorWrites[iBinding].descriptorCount = m_descriptorBindings[iBinding].descriptorCount;
+		}
+		descriptorWrites[0].pImageInfo = &descriptorInputImageInfo;
+		descriptorWrites[1].pBufferInfo = &descriptorCameraInfo;
+		vkUpdateDescriptorSets(context.getLogicalDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	}
+}
+
 void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Context &context, const Scene &scene)
 {
-	// --- Descriptor set
-	// Output
-	VkDescriptorImageInfo descriptorInputImageInfo{};
-	descriptorInputImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	descriptorInputImageInfo.imageView = m_imageView;
-	descriptorInputImageInfo.sampler = nullptr;
-	// Ubo
-	VkDescriptorBufferInfo descriptorCameraInfo{};
-	descriptorCameraInfo.buffer = m_uniformBuffers[imageIndex()]; // TODO set correct uniform. One descriptor per image. One render target per image.
-	descriptorCameraInfo.range = sizeof(UniformBufferObject);
-
-	std::vector<VkWriteDescriptorSet> descriptorWrites(m_descriptorBindings.size());
-	for (size_t iBinding = 0; iBinding < m_descriptorBindings.size(); iBinding++)
-	{
-		descriptorWrites[iBinding].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[iBinding].dstSet = m_descriptorSet;
-		descriptorWrites[iBinding].dstBinding = m_descriptorBindings[iBinding].binding;
-		descriptorWrites[iBinding].dstArrayElement = 0;
-		descriptorWrites[iBinding].descriptorType = m_descriptorBindings[iBinding].descriptorType;
-		descriptorWrites[iBinding].descriptorCount = m_descriptorBindings[iBinding].descriptorCount;
-	}
-	descriptorWrites[0].pImageInfo = &descriptorInputImageInfo;
-	descriptorWrites[1].pBufferInfo = &descriptorCameraInfo;
-	vkUpdateDescriptorSets(context.getLogicalDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
 	// --- UBO
 	float ratio = context.getWidth() / (float)context.getHeight();
 	static UniformBufferObject ubo = {};
@@ -245,18 +259,10 @@ void ProceduralCompute::update(const vk::ImageIndex &imageIndex, const vk::Conte
 	ubo.zFar = scene.camera.zFar;
 	ubo.dt = scene.camera.dt;
 
-	for (size_t iUbo = 0; iUbo < m_uniformBuffers.size(); iUbo++)
-	{
-		void* data;
-		VK_CHECK_RESULT(vkMapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[iUbo], 0, sizeof(UniformBufferObject), 0, &data));
-		memcpy(data, &ubo, sizeof(UniformBufferObject));
-		vkUnmapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[iUbo]);
-	}
-}
-
-void ProceduralCompute::reset()
-{
-	m_samples = 0;
+	void* data;
+	VK_CHECK_RESULT(vkMapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[imageIndex()], 0, sizeof(UniformBufferObject), 0, &data));
+	memcpy(data, &ubo, sizeof(UniformBufferObject));
+	vkUnmapMemory(context.getLogicalDevice(), m_uniformBuffersMemory[imageIndex()]);
 }
 
 }

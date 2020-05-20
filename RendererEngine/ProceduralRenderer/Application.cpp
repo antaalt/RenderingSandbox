@@ -48,6 +48,13 @@ Application::Application() :
 	{
 		m_commandBuffers[iImage].set(commandBuffers[iImage], vk::ImageIndex(iImage));
 	}
+	m_scene.camera.transform = geo::mat4f::translate(geo::vec3f(0.f, 50.f, 0.f));
+	m_scene.camera.hFov = geo::degreef(60.f);
+	m_scene.camera.zNear = 0.1f;
+	m_scene.camera.zFar = 1000.f;
+	m_scene.camera.dt = 1.f;
+	m_scene.sun.direction = geo::vec3f(0, 1, 0);
+
 	m_gui.setScene(&m_scene);
 	m_gui.create(m_context, m_window);
 
@@ -136,7 +143,6 @@ bool Application::inputs()
 	}
 	if (io.KeysDown[GLFW_KEY_SPACE])
 	{
-		m_compute.reset();
 		recreate();
 		updated = true;
 	}
@@ -154,12 +160,15 @@ void Application::execute()
 		bool drawUpdate = m_gui.draw(stats);
 		if (inputUpdate || drawUpdate)
 		{
-			m_compute.reset();
+			m_compute.reset(m_context, m_scene);
 		}
 
 		// Render
 		vk::SwapChainFrame frame;
-		m_context.acquireNextFrame(&frame);
+		if (m_context.acquireNextFrame(&frame))
+		{
+			// resize
+		}
 
 		if(!m_gui.isPaused())
 		{
@@ -240,7 +249,10 @@ void Application::execute()
 
 		m_gui.render(frame.imageIndex, m_context);
 
-		m_context.presentFrame(frame);
+		if (m_context.presentFrame(frame))
+		{
+			// resize
+		}
 	});
 }
 
@@ -251,6 +263,7 @@ void Application::createStages()
 		m_context.registerShader(shader, loadFile("data/shaders/" + shader + ".spv"));
 	// Pass
 	m_compute.create(m_context);
+	m_compute.reset(m_context, m_scene);
 
 	// Clean
 	m_context.destroyShaders();
