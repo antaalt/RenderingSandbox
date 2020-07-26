@@ -20,19 +20,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Array.h" />
+    <ClInclude Include="BaseApp.h" />
+    <ClInclude Include="VulkanExtensions.h" />
+    <ClInclude Include="Window.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Reader.h" />
+    <ClInclude Include="VulkanApi.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Array.cpp" />
+    <ClCompile Include="BaseApp.cpp" />
+    <ClCompile Include="VulkanExtensions.cpp" />
+    <ClCompile Include="Window.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Reader.cpp" />
+    <ClCompile Include="VulkanApi.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{67A60D52-49FC-4FF3-A87B-7AA50DCDDC31}</ProjectGuid>
@@ -105,6 +113,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs\glfw-3.3.2\include;$(SolutionDir)libs\imgui;$(VULKAN_SDK)\Include;$(SolutionDir)libs\imnodes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

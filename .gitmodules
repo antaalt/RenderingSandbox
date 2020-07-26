@@ -7,3 +7,6 @@
 [submodule "imgui"]
 	path = RendererEngine/libs/imgui
 	url = git@github.com:ocornut/imgui.git
+[submodule "RendererEngine/libs/imnodes"]
+	path = RendererEngine/libs/imnodes
+	url = git@github.com:Nelarius/imnodes.git
