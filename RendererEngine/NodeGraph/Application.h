@@ -3,6 +3,7 @@
 #include "../Framework/VulkanApi.h"
 #include "../Framework/Window.h"
 #include "../Framework/BaseApp.h"
+#include "NodeGraph.h"
 
 namespace node {
 
@@ -32,6 +33,7 @@ private:
 	VkRenderPass m_renderPass;
 	std::vector<VkFramebuffer> m_frames;
 	VkDescriptorPool m_descriptorPool;
+	NodeGraph m_graph;
 };
 
 }

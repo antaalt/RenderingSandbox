@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <examples\imgui_impl_glfw.h>
 #include <examples\imgui_impl_vulkan.h>
+#include <imnodes.h>
 
 namespace node {
 
@@ -77,11 +78,7 @@ void Application::createRenderPass(const vk::Context &context)
 
 void Application::drawNodeGUI()
 {
-	if (ImGui::Begin("hello"))
-	{
-		
-	}
-	ImGui::End();
+	m_graph.draw();
 }
 
 void Application::initialize()
@@ -168,6 +165,8 @@ void Application::initialize()
 	m_context.endSingleTimeCommand(cmdBuffer);
 
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+	imnodes::Initialize();
 }
 
 void Application::destroy()
@@ -178,6 +177,7 @@ void Application::destroy()
 
 	vkFreeCommandBuffers(m_context.getLogicalDevice(), m_context.getCommandPool(), m_context.getImageCount(), commandBuffers.data());
 	// GUI
+	imnodes::Shutdown();
 	ImGui_ImplVulkan_Shutdown();
 	for (uint32_t i = 0; i < m_frames.size(); i++)
 	{

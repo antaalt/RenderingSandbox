@@ -112,8 +112,8 @@ bool Application::inputs()
 	if (io.MouseDown[1] && !io.WantCaptureMouse)
 	{
 		m_scene.camera.transform = m_scene.camera.transform *geo::mat4f::translate(geo::vec3f(
-			-io.MouseDelta.x,
-			io.MouseDelta.y,
+			-io.MouseDelta.x * sensitivity * 10.f,
+			io.MouseDelta.y * sensitivity* 10.f,
 			0.f
 		));
 		updated = true;
@@ -138,7 +138,7 @@ bool Application::inputs()
 	// ZOOM
 	if (io.MouseWheel != 0.0 && !io.WantCaptureMouse)
 	{
-		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::translate(geo::vec3f(0.f, 0.f, io.MouseWheel * 100.f));
+		m_scene.camera.transform = m_scene.camera.transform * geo::mat4f::translate(geo::vec3f(0.f, 0.f, io.MouseWheel * 10.f));
 		updated = true;
 	}
 	if (io.KeysDown[GLFW_KEY_SPACE])
@@ -199,6 +199,7 @@ void Application::execute()
 			imageMemoryBarrier[1].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			imageMemoryBarrier[1].image = m_context.getImage(frame.imageIndex);
 			imageMemoryBarrier[1].subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
 			vkCmdPipelineBarrier(
 				cmdBuff(),
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
