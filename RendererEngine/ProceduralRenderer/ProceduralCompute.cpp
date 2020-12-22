@@ -47,7 +47,7 @@ void ProceduralCompute::create(const vk::Context & context)
 	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(context.getLogicalDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout));
 
 	// --- Descriptor pool
-	std::vector<VkDescriptorPoolSize> poolSizes(m_descriptorBindings.size(), {});
+	std::vector<VkDescriptorPoolSize> poolSizes(m_descriptorBindings.size(), VkDescriptorPoolSize{});
 	for (size_t i = 0; i < poolSizes.size(); i++)
 	{
 		poolSizes[i].type = m_descriptorBindings[i].descriptorType;
